@@ -1,4 +1,4 @@
-import type { QuestionnaireSection } from "@/types/questionnaire"
+import type { QuestionnaireSection } from '@/types/questionnaire'
 
 export const WEDDING_QUESTIONNAIRE: QuestionnaireSection[] = [
   // ── Your Details ───────────────────────────────────────────────
@@ -22,6 +22,10 @@ export const WEDDING_QUESTIONNAIRE: QuestionnaireSection[] = [
     id: 'day_of_details',
     title: 'Day-Of Details',
     fields: [
+      { id: 'tl_ceremony_start', label: 'Ceremony start time', type: 'text', required: true, placeholder: 'e.g. 4:30pm', hint: 'We\'ll build the full timeline together from here.' },
+      { id: 'tl_cocktail_hour', label: 'Cocktail hour start time', type: 'text', required: true, placeholder: 'e.g. 5:30pm' },
+      { id: 'tl_reception_start', label: 'Reception start time', type: 'text', required: true, placeholder: 'e.g. 6:30pm' },
+      { id: 'tl_notes', label: 'Anything else we should know about the day\'s schedule?', type: 'textarea', placeholder: 'e.g. First look before the ceremony, two locations, extra travel time between venues' },
       { id: 'bridal_prep_address', label: 'Bridal Preparation Address', type: 'textarea', required: true, hint: 'Full address including suite/room if applicable' },
       { id: 'groom_prep_address', label: 'Groom Preparation Address', type: 'textarea', required: true },
       { id: 'first_look_location', label: 'First Look Location Preference (if applicable)', type: 'text', placeholder: 'e.g. Hotel lobby, garden terrace' },
@@ -71,45 +75,6 @@ export const WEDDING_QUESTIONNAIRE: QuestionnaireSection[] = [
         type: 'radio',
         options: ['6 hours', '8 hours', '10 hours', 'Elopement', 'Other'],
       },
-    ],
-  },
-
-  // ── Timeline ───────────────────────────────────────────────────
-  {
-    id: 'timeline',
-    title: 'Timeline',
-    fields: [
-      // Getting ready
-      { id: 'tl_hair_makeup', label: 'Hair & Makeup', type: 'text', placeholder: 'e.g. 7am–12pm', hint: 'Getting ready' },
-      { id: 'tl_photographer_arrival', label: 'Photographer Arrival Time', type: 'text', required: true },
-      { id: 'tl_details_flatlays', label: 'Details & Flat Lays (min. 30 min)', type: 'text', hint: 'Dependent upon floral delivery' },
-      { id: 'tl_bride_getting_dressed', label: 'Getting Dressed — Bride & Bridal Party', type: 'text' },
-      { id: 'tl_groom_getting_dressed', label: 'Getting Dressed — Groom & Groomsmen', type: 'text' },
-      { id: 'tl_bridal_portraits', label: 'Bridal Portraits (min. 30 min)', type: 'text' },
-      // First look & portraits
-      { id: 'tl_first_look', label: 'First Look (if applicable)', type: 'text', hint: 'First look & portraits' },
-      { id: 'tl_bride_groom_portraits', label: 'Bride & Groom Portraits (min. 30 min)', type: 'text' },
-      { id: 'tl_wedding_party_portraits', label: 'Wedding Party Portraits (min. 30 min)', type: 'text' },
-      { id: 'tl_family_portraits', label: 'Family Portraits (min. 30 min)', type: 'text' },
-      { id: 'tl_pre_ceremony_notes', label: 'Any other important formalities before ceremony?', type: 'textarea' },
-      // Ceremony
-      { id: 'tl_leaving_for_ceremony', label: 'Leaving/Tucking Away for Ceremony', type: 'text', hint: 'Ceremony' },
-      { id: 'tl_ceremony_start', label: 'Ceremony Start', type: 'text', required: true },
-      { id: 'tl_ceremony_notes', label: 'Any other important ceremony formalities?', type: 'textarea' },
-      // Reception
-      { id: 'tl_cocktail_hour', label: 'Cocktail Hour', type: 'text', hint: 'Reception', required: true },
-      { id: 'tl_additional_family', label: 'Additional Family Portraits', type: 'text' },
-      { id: 'tl_reception_start', label: 'Reception Start', type: 'text', required: true },
-      { id: 'tl_introductions', label: 'Introductions', type: 'text' },
-      { id: 'tl_first_dance', label: 'First Dance', type: 'text' },
-      { id: 'tl_parent_dances', label: 'Parent Dances', type: 'text' },
-      { id: 'tl_toasts', label: 'Toasts', type: 'text' },
-      { id: 'tl_dinner', label: 'Dinner', type: 'text' },
-      { id: 'tl_sunset_photos', label: 'Sunset Photos', type: 'text' },
-      { id: 'tl_cake_cutting', label: 'Cake Cutting', type: 'text' },
-      { id: 'tl_dance_floor', label: 'Dance Floor Opens', type: 'text' },
-      { id: 'tl_photographer_departure', label: 'Photographer Departure Time', type: 'text', required: true },
-      { id: 'tl_reception_notes', label: 'Any other important reception formalities?', type: 'textarea' },
     ],
   },
 

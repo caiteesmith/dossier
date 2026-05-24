@@ -61,6 +61,16 @@ export function useBookingDetail(id: string) {
   })
 }
 
+export function useAllBookingDetails() {
+  return useQuery({
+    queryKey: ['bookings', 'all-details'],
+    queryFn: async (): Promise<Record<string, BookingDetail>> => {
+      // TODO: replace with api.get('/bookings/details').then(r => r.data)
+      return SAMPLE_BOOKING_DETAILS
+    },
+  })
+}
+
 // ── Tasks ─────────────────────────────────────────────────────────
 
 export function useToggleTask() {
@@ -75,7 +85,6 @@ export function useToggleTask() {
       return { bookingId, taskId, completed }
     },
     onMutate: async ({ bookingId, taskId, completed }) => {
-      // Optimistic update
       await queryClient.cancelQueries({ queryKey: ['bookings', bookingId] })
       const previous = queryClient.getQueryData(['bookings', bookingId])
       queryClient.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
@@ -100,14 +109,19 @@ export function useToggleTask() {
   })
 }
 
-// ── All booking details (for dashboard/bookings list task counts) ──
+// ── Portal ────────────────────────────────────────────────────────
 
-export function useAllBookingDetails() {
+export function usePortalBooking(token: string) {
   return useQuery({
-    queryKey: ['bookings', 'all-details'],
-    queryFn: async (): Promise<Record<string, BookingDetail>> => {
-      // TODO: replace with api.get('/bookings/details').then(r => r.data)
-      return SAMPLE_BOOKING_DETAILS
+    queryKey: ['portal', token],
+    queryFn: async (): Promise<BookingDetail | undefined> => {
+      // TODO: replace with api.get(`/portal/${token}`).then(r => r.data)
+      // Any booking with portal_enabled = true is accessible by token
+      const match = Object.values(SAMPLE_BOOKING_DETAILS).find(
+        b => b.portalToken === token && b.portalEnabled
+      )
+      return match
     },
+    enabled: !!token,
   })
 }

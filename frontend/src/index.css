@@ -80,3 +80,6 @@ input[type="checkbox"] { accent-color: var(--color-navy-700); }
 .stagger-children > *:nth-child(6) { animation-delay: 0.30s; }
 .stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
 .stagger-children > *:nth-child(8) { animation-delay: 0.40s; }
+[data-dnd-kit-drag-overlay] {
+  position: fixed !important;
+}

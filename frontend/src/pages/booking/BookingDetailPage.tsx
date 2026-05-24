@@ -5,6 +5,8 @@ import { Badge, Card, Button } from '@/components/ui'
 import { useBookingDetail, useToggleTask } from '@/hooks/useData'
 import { DayOfSheet } from '@/components/booking/DayOfSheet'
 import { SAMPLE_QUESTIONNAIRE_RESPONSE } from '@/data/questionnaire'
+import ShotListTab from './ShotListTab'
+import TimelineTab from './TimelineTab'
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -168,114 +170,7 @@ function TasksTab({ bookingId }: { bookingId: string }) {
   )
 }
 
-function TimelineTab({ bookingId }: { bookingId: string }) {
-  const { data } = useBookingDetail(bookingId)
-  if (!data) return null
-  const { timeline } = data
-  if (!timeline) {
-    return (
-      <div className="text-center py-16">
-        <p className="font-display italic text-lg" style={{ color: 'var(--color-navy-400)' }}>No timeline yet</p>
-        <Button className="mt-4" size="sm">+ Build timeline</Button>
-      </div>
-    )
-  }
-  return (
-    <div className="space-y-4">
-      {timeline.sunsetTime && (
-        <div className="flex items-center gap-4 text-sm rounded-xl px-5 py-3" style={{ background: 'var(--color-gold-pale)', color: 'var(--color-gold-warm)' }}>
-          <span>🌅 Sunset {timeline.sunsetTime}</span>
-          <span>·</span>
-          <span>✨ Golden hour {timeline.goldenHourTime}</span>
-        </div>
-      )}
-      <Card>
-        <div>
-          {timeline.blocks.map((block, i) => {
-            const isGolden = block.title.toLowerCase().includes('golden')
-            return (
-              <div
-                key={block.id}
-                className="flex items-start gap-5 px-6 py-4"
-                style={{
-                  borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)',
-                  background: isGolden ? 'var(--color-gold-pale)' : 'transparent',
-                }}
-              >
-                <div className="w-14 shrink-0 text-right">
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-navy-600)' }}>{block.startTime}</span>
-                </div>
-                <div className="w-px self-stretch shrink-0" style={{ background: 'var(--color-navy-200)' }} />
-                <div className="flex-1">
-                  <p className="text-sm font-medium" style={{ color: isGolden ? 'var(--color-gold-warm)' : 'var(--color-navy-800)' }}>
-                    {block.title}
-                  </p>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{block.durationMinutes} min</span>
-                    {block.location && <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>· {block.location}</span>}
-                  </div>
-                  {block.notes && <p className="text-xs italic mt-1" style={{ color: 'var(--color-navy-400)' }}>{block.notes}</p>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </Card>
-      <Button variant="secondary" size="sm">+ Add block</Button>
-    </div>
-  )
-}
 
-function ShotListTab({ bookingId }: { bookingId: string }) {
-  const { data } = useBookingDetail(bookingId)
-  if (!data) return null
-  if (data.shotListGroups.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <p className="font-display italic text-lg" style={{ color: 'var(--color-navy-400)' }}>No shot list yet</p>
-        <Button className="mt-4" size="sm">+ Build shot list</Button>
-      </div>
-    )
-  }
-  const total = data.shotListGroups.flatMap(g => g.items).length
-  const done = data.shotListGroups.flatMap(g => g.items).filter(i => i.completed).length
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--color-navy-500)' }}>
-        <span>{total} shots across {data.shotListGroups.length} groups</span>
-        {done > 0 && <span style={{ color: '#276840' }}>· {done} captured</span>}
-      </div>
-      {data.shotListGroups.map(group => (
-        <div key={group.id}>
-          <h3 className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--color-navy-400)' }}>{group.name}</h3>
-          <Card>
-            <div>
-              {group.items.map((item, i) => (
-                <label
-                  key={item.id}
-                  className="flex items-center gap-3 px-5 py-3 cursor-pointer transition-colors"
-                  style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-fog)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <input type="checkbox" checked={item.completed} onChange={() => {}} className="w-4 h-4 rounded" />
-                  <span className="text-sm flex-1" style={{
-                    color: item.completed ? 'var(--color-navy-400)' : 'var(--color-navy-700)',
-                    textDecoration: item.completed ? 'line-through' : 'none',
-                  }}>
-                    {item.description}
-                  </span>
-                  {item.notes && <span className="text-xs italic" style={{ color: 'var(--color-navy-400)' }}>{item.notes}</span>}
-                </label>
-              ))}
-            </div>
-          </Card>
-        </div>
-      ))}
-      <Button variant="secondary" size="sm">+ Add group</Button>
-    </div>
-  )
-}
 
 function VendorsTab({ bookingId }: { bookingId: string }) {
   const { data } = useBookingDetail(bookingId)
@@ -366,13 +261,26 @@ export default function BookingDetailPage() {
               <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{completedTasks}/{data.tasks.length} tasks done</span>
             </div>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setShowDayOf(true)}
-          >
-            📋 Day-of sheet
-          </Button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const url = window.location.origin + '/portal/' + data.portalToken
+                navigator.clipboard.writeText(url)
+                alert('Portal link copied to clipboard!')
+              }}
+            >
+              🔗 Copy portal link
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowDayOf(true)}
+            >
+              📋 Day-of sheet
+            </Button>
+          </div>
         </div>
 
         {/* Outstanding tasks banner */}
@@ -430,8 +338,8 @@ export default function BookingDetailPage() {
         <div className="animate-fade-up">
           {activeTab === 'overview' && <OverviewTab bookingId={id ?? ''} />}
           {activeTab === 'tasks'    && <TasksTab bookingId={id ?? ''} />}
-          {activeTab === 'timeline' && <TimelineTab bookingId={id ?? ''} />}
-          {activeTab === 'shotlist' && <ShotListTab bookingId={id ?? ''} />}
+          {activeTab === 'timeline' && <TimelineTab bookingId={id ?? ''} initialTimeline={data.timeline} />}
+          {activeTab === 'shotlist' && <ShotListTab bookingId={id ?? ''} initialGroups={data.shotListGroups} />}
           {activeTab === 'vendors'  && <VendorsTab bookingId={id ?? ''} />}
         </div>
       </div>
