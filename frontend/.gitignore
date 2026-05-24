@@ -1,0 +1,43 @@
+# ── Dependencies ─────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ── Build outputs ─────────────────────────────────────────────────
+frontend/dist/
+frontend/build/
+Dossier.Api/bin/
+Dossier.Api/obj/
+
+# ── Environment & secrets ─────────────────────────────────────────
+frontend/.env.local
+frontend/.env.*.local
+Dossier.Api/appsettings.Development.json
+Dossier.Api/appsettings.Production.json
+Dossier.Api/appsettings.Staging.json
+
+# ── Logs ─────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# ── Editor & OS ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ── Testing ───────────────────────────────────────────────────────
+coverage/
+.nyc_output
+
+# ── Misc ──────────────────────────────────────────────────────────
+*.pem
+.cache
