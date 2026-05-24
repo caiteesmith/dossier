@@ -17,6 +17,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import AppShell from '@/components/layout/AppShell'
+import NewLeadModal from '@/components/forms/NewLeadModal'
+import NewBookingModal from '@/components/forms/NewBookingModal'
 import { PageHeader, Button } from '@/components/ui'
 import { useLeads, useUpdateLeadStatus } from '@/hooks/useData'
 import type { Lead, LeadStatus } from '@/types'
@@ -36,7 +38,7 @@ function formatDate(dateStr?: string) {
 
 // ── Lead card (used both in sortable context and drag overlay) ────
 
-function LeadCardContent({ lead, isDragging = false }: { lead: Lead; isDragging?: boolean }) {
+function LeadCardContent({ lead, isDragging = false, onConvert }: { lead: Lead; isDragging?: boolean; onConvert?: (lead: Lead) => void }) {
   return (
     <div
       className="rounded-xl p-4 space-y-3 transition-shadow"
@@ -72,13 +74,23 @@ function LeadCardContent({ lead, isDragging = false }: { lead: Lead; isDragging?
           {lead.notes}
         </p>
       )}
+      {!isDragging && onConvert && lead.status !== 'booked' && lead.status !== 'lost' && (
+        <div style={{ borderTop: '1px solid var(--color-navy-100)', paddingTop: '8px', marginTop: '4px' }}>
+          <button
+            onClick={e => { e.stopPropagation(); onConvert(lead) }}
+            style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-steel-600)', background: 'var(--color-navy-50)', border: '1px solid var(--color-navy-200)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}
+          >
+            Convert to booking →
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
 // ── Sortable lead card ────────────────────────────────────────────
 
-function SortableLeadCard({ lead }: { lead: Lead }) {
+function SortableLeadCard({ lead, onConvert }: { lead: Lead; onConvert?: (lead: Lead) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
     data: { lead, type: 'lead' },
@@ -92,7 +104,7 @@ function SortableLeadCard({ lead }: { lead: Lead }) {
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <LeadCardContent lead={lead} />
+      <LeadCardContent lead={lead} onConvert={onConvert} />
     </div>
   )
 }
@@ -100,18 +112,19 @@ function SortableLeadCard({ lead }: { lead: Lead }) {
 // ── Kanban column ─────────────────────────────────────────────────
 
 function KanbanColumn({
-  status,
   label,
   leads,
   isOver,
+  onConvert,
 }: {
   status: LeadStatus
   label: string
   leads: Lead[]
   isOver: boolean
+  onConvert?: (lead: Lead) => void
 }) {
   return (
-    <div className="flex-shrink-0 w-64">
+    <div className="shrink-0 w-64">
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-navy-500)' }}>
           {label}
@@ -140,7 +153,7 @@ function KanbanColumn({
                 </span>
               </div>
             ) : (
-              leads.map(lead => <SortableLeadCard key={lead.id} lead={lead} />)
+              leads.map(lead => <SortableLeadCard key={lead.id} lead={lead} onConvert={onConvert} />)
             )}
           </div>
         </SortableContext>
@@ -155,6 +168,8 @@ export default function LeadsPage() {
   const { data: leads = [], isLoading } = useLeads()
   const updateStatus = useUpdateLeadStatus()
   const [showLost, setShowLost] = useState(false)
+  const [showNewLead, setShowNewLead] = useState(false)
+  const [convertLead, setConvertLead] = useState<Lead | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overId, setOverId] = useState<LeadStatus | null>(null)
 
@@ -169,13 +184,6 @@ export default function LeadsPage() {
     localStatuses[lead.id] ?? lead.status
 
   const activeLead = activeId ? leads.find(l => l.id === activeId) : null
-
-  // Figure out which column a dragged item is currently over
-  const getColumnForItem = (itemId: string): LeadStatus | null => {
-    const lead = leads.find(l => l.id === itemId)
-    if (!lead) return null
-    return getLeadStatus(lead)
-  }
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string)
@@ -247,7 +255,7 @@ export default function LeadsPage() {
               >
                 {showLost ? 'Hide lost' : 'Show lost'}
               </button>
-              <Button size="sm">+ New lead</Button>
+              <Button size="sm" onClick={() => setShowNewLead(true)}>+ New lead</Button>
             </div>
           }
         />
@@ -271,11 +279,12 @@ export default function LeadsPage() {
                   label={col.label}
                   leads={getColumnLeads(col.status)}
                   isOver={overId === col.status}
+                  onConvert={setConvertLead}
                 />
               ))}
 
               {showLost && (
-                <div className="flex-shrink-0 w-64 opacity-50">
+                <div className="shrink-0 w-64 opacity-50">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-medium uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>Lost</span>
                     <span className="text-xs rounded-full px-2 py-0.5" style={{ background: 'var(--color-navy-100)', color: 'var(--color-navy-400)' }}>
@@ -298,6 +307,8 @@ export default function LeadsPage() {
           </DndContext>
         )}
       </div>
+      {showNewLead && <NewLeadModal onClose={() => setShowNewLead(false)} />}
+      {convertLead && <NewBookingModal onClose={() => setConvertLead(null)} prefill={convertLead} leadId={convertLead.id} />}
     </AppShell>
   )
 }

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import AppShell from '@/components/layout/AppShell'
 import { Card, StatCard, Badge, PageHeader } from '@/components/ui'
 import { TasksSnapshot } from '@/components/ui/TasksSnapshot'
+import { WeatherWidget } from '@/components/ui/WeatherWidget'
 import { useBookings, useLeads, useAllBookingDetails } from '@/hooks/useData'
 
 function daysUntil(dateStr: string) {
@@ -68,6 +69,9 @@ export default function DashboardPage() {
                       <TasksSnapshot bookingId={nextWedding.id} tasks={allDetails[nextWedding.id].tasks} />
                     </div>
                   )}
+                  <div className="pt-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>
+                    <WeatherWidget booking={nextWedding} compact />
+                  </div>
                 </Card>
               </Link>
             ) : (

@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
+import NewBookingModal from '@/components/forms/NewBookingModal'
 import { Card, Badge, PageHeader, Button, EmptyState } from '@/components/ui'
 import { TasksSnapshot } from '@/components/ui/TasksSnapshot'
 import { useBookings, useAllBookingDetails } from '@/hooks/useData'
@@ -14,6 +16,7 @@ function daysUntil(dateStr: string) {
 }
 
 export default function BookingsPage() {
+  const [showNew, setShowNew] = useState(false)
   const { data: bookings = [], isLoading } = useBookings()
   const { data: allDetails = {} } = useAllBookingDetails()
 
@@ -27,7 +30,7 @@ export default function BookingsPage() {
         <PageHeader
           title="Bookings"
           subtitle={`${bookings.length} weddings on the books`}
-          action={<Button size="sm">+ New booking</Button>}
+          action={<Button size="sm" onClick={() => setShowNew(true)}>+ New booking</Button>}
         />
         {isLoading ? (
           <div className="text-sm" style={{ color: 'var(--color-navy-400)' }}>Loading...</div>
@@ -104,6 +107,7 @@ export default function BookingsPage() {
           </Card>
         )}
       </div>
+      {showNew && <NewBookingModal onClose={() => setShowNew(false)} />}
     </AppShell>
   )
 }

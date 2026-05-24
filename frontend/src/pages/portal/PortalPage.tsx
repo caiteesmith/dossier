@@ -4,7 +4,7 @@ import { usePortalBooking } from '@/hooks/useData'
 import PortalQuestionnaire from './PortalQuestionnaire'
 import PortalTimeline from './PortalTimeline'
 import PortalVendors from './PortalVendors'
-import PortalTodo from './PortalToDo'
+import PortalTodo from './PortalTodo'
 import PortalDocuments from './PortalDocuments'
 import PortalResources from './PortalResources'
 

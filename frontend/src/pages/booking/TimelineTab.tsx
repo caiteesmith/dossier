@@ -17,6 +17,13 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, Button } from '@/components/ui'
+function to12h(hhmm: string): string {
+  if (!hhmm) return hhmm
+  const [h, m] = hhmm.split(':').map(Number)
+  const ampm = h < 12 ? 'am' : 'pm'
+  const hour = h % 12 === 0 ? 12 : h % 12
+  return `${hour}:${String(m).padStart(2, '0')}${ampm}`
+}
 import type { Timeline, TimelineBlock } from '@/types'
 
 interface BlockFormProps {
@@ -105,7 +112,7 @@ function BlockContent({ block, isDragging = false, onEdit, onDelete }: {
         <div className="w-3 h-px rounded" style={{ background: 'var(--color-navy-500)' }} />
       </div>
       <div className="w-14 shrink-0 text-right">
-        <span className="text-sm font-medium" style={{ color: 'var(--color-navy-600)' }}>{block.startTime}</span>
+        <span className="text-sm font-medium" style={{ color: 'var(--color-navy-600)' }}>{to12h(block.startTime)}</span>
       </div>
       <div className="w-px self-stretch shrink-0" style={{ background: 'var(--color-navy-200)' }} />
       <div className="flex-1 min-w-0">
@@ -187,9 +194,9 @@ export default function TimelineTab({ initialTimeline }: TimelineTabProps) {
     <div ref={containerRef} className="space-y-4">
       {initialTimeline?.sunsetTime && (
         <div className="flex items-center gap-4 text-sm rounded-xl px-5 py-3" style={{ background: 'var(--color-gold-pale)', color: 'var(--color-gold-warm)' }}>
-          <span>🌅 Sunset {initialTimeline.sunsetTime}</span>
+          <span>🌅 Sunset {to12h(initialTimeline.sunsetTime ?? '')}</span>
           <span>·</span>
-          <span>✨ Golden hour {initialTimeline.goldenHourTime}</span>
+          <span>✨ Golden hour {to12h(initialTimeline.goldenHourTime ?? '')}</span>
         </div>
       )}
 

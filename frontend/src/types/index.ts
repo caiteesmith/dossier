@@ -54,6 +54,13 @@ export interface Booking {
   partnerTwoName: string
   email: string
   phone?: string
+  partnerOneLegalName?: string
+  partnerTwoLegalName?: string
+  marriedSurname?: string
+  mailingAddress?: string
+  mailingCity?: string
+  mailingState?: string
+  mailingZip?: string
   weddingDate: string
   venueName: string
   venueAddress?: string
