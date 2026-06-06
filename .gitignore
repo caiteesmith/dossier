@@ -10,6 +10,7 @@ Dossier.Api/bin/
 Dossier.Api/obj/
 
 # ── Environment & secrets ─────────────────────────────────────────
+frontend/.env
 frontend/.env.local
 frontend/.env.*.local
 Dossier.Api/appsettings.Development.json
