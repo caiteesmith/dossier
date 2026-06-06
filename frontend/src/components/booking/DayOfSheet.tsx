@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import React, { useRef } from 'react'
 import type { BookingDetail } from '@/types'
 import type { QuestionnaireAnswers } from '@/types/questionnaire'
 
@@ -6,6 +6,19 @@ interface DayOfSheetProps {
   booking: BookingDetail
   answers?: QuestionnaireAnswers
   onClose: () => void
+}
+
+type TimelineRow = {
+  label: string
+  time: string
+  section?: string
+}
+
+type VendorEntry = {
+  role: string
+  name: string
+  phone?: string | null
+  email?: string | null
 }
 
 function formatDate(dateStr: string) {
@@ -40,44 +53,44 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
     win.document.close()
   }
 
-  const vendors = [
-    ...(booking.vendors.map(v => ({ role: v.role, name: v.name, phone: v.phone, email: v.email }))),
+  const vendors: VendorEntry[] = [
+    ...booking.vendors.map(v => ({ role: v.role, name: v.name, phone: v.phone, email: v.email })),
     ...(answers ? [
-      { role: 'Planner', name: a(answers, 'vendor_planner') },
-      { role: 'Officiant', name: a(answers, 'vendor_officiant') },
+      { role: 'Planner',      name: a(answers, 'vendor_planner') },
+      { role: 'Officiant',    name: a(answers, 'vendor_officiant') },
       { role: 'Videographer', name: a(answers, 'vendor_videographer') },
-      { role: 'Florist', name: a(answers, 'vendor_florist') },
-      { role: 'Hair', name: a(answers, 'vendor_hair') },
-      { role: 'Makeup', name: a(answers, 'vendor_makeup') },
-      { role: 'DJ/Band', name: a(answers, 'vendor_dj_band') },
+      { role: 'Florist',      name: a(answers, 'vendor_florist') },
+      { role: 'Hair',         name: a(answers, 'vendor_hair') },
+      { role: 'Makeup',       name: a(answers, 'vendor_makeup') },
+      { role: 'DJ/Band',      name: a(answers, 'vendor_dj_band') },
     ].filter(v => v.name) : []),
   ]
 
-  const timelineRows = answers ? [
-    { label: 'Hair & Makeup', time: a(answers, 'tl_hair_makeup'), section: 'Getting Ready' },
-    { label: 'Photographer Arrival', time: a(answers, 'tl_photographer_arrival') },
-    { label: 'Details & Flat Lays', time: a(answers, 'tl_details_flatlays') },
-    { label: 'Bride Getting Dressed', time: a(answers, 'tl_bride_getting_dressed') },
-    { label: 'Groom Getting Dressed', time: a(answers, 'tl_groom_getting_dressed') },
-    { label: 'Bridal Portraits', time: a(answers, 'tl_bridal_portraits') },
-    { label: 'First Look', time: a(answers, 'tl_first_look'), section: 'First Look & Portraits' },
+  const timelineRows: TimelineRow[] = answers ? ([
+    { label: 'Hair & Makeup',           time: a(answers, 'tl_hair_makeup'),             section: 'Getting Ready' },
+    { label: 'Photographer Arrival',    time: a(answers, 'tl_photographer_arrival') },
+    { label: 'Details & Flat Lays',     time: a(answers, 'tl_details_flatlays') },
+    { label: 'Bride Getting Dressed',   time: a(answers, 'tl_bride_getting_dressed') },
+    { label: 'Groom Getting Dressed',   time: a(answers, 'tl_groom_getting_dressed') },
+    { label: 'Bridal Portraits',        time: a(answers, 'tl_bridal_portraits') },
+    { label: 'First Look',              time: a(answers, 'tl_first_look'),              section: 'First Look & Portraits' },
     { label: 'Bride & Groom Portraits', time: a(answers, 'tl_bride_groom_portraits') },
     { label: 'Wedding Party Portraits', time: a(answers, 'tl_wedding_party_portraits') },
-    { label: 'Family Portraits', time: a(answers, 'tl_family_portraits') },
-    { label: 'Leaving for Ceremony', time: a(answers, 'tl_leaving_for_ceremony'), section: 'Ceremony' },
-    { label: 'Ceremony', time: a(answers, 'tl_ceremony_start') },
-    { label: 'Cocktail Hour', time: a(answers, 'tl_cocktail_hour'), section: 'Reception' },
-    { label: 'Reception', time: a(answers, 'tl_reception_start') },
-    { label: 'Introductions', time: a(answers, 'tl_introductions') },
-    { label: 'First Dance', time: a(answers, 'tl_first_dance') },
-    { label: 'Parent Dances', time: a(answers, 'tl_parent_dances') },
-    { label: 'Toasts', time: a(answers, 'tl_toasts') },
-    { label: 'Dinner', time: a(answers, 'tl_dinner') },
-    { label: 'Sunset Photos ✨', time: a(answers, 'tl_sunset_photos') },
-    { label: 'Cake Cutting', time: a(answers, 'tl_cake_cutting') },
-    { label: 'Dance Floor Opens', time: a(answers, 'tl_dance_floor') },
-    { label: 'Photographer Departure', time: a(answers, 'tl_photographer_departure') },
-  ].filter(r => r.time) : booking.timeline?.blocks.map(b => ({ label: b.title, time: b.startTime })) ?? []
+    { label: 'Family Portraits',        time: a(answers, 'tl_family_portraits') },
+    { label: 'Leaving for Ceremony',    time: a(answers, 'tl_leaving_for_ceremony'),    section: 'Ceremony' },
+    { label: 'Ceremony',                time: a(answers, 'tl_ceremony_start') },
+    { label: 'Cocktail Hour',           time: a(answers, 'tl_cocktail_hour'),           section: 'Reception' },
+    { label: 'Reception',               time: a(answers, 'tl_reception_start') },
+    { label: 'Introductions',           time: a(answers, 'tl_introductions') },
+    { label: 'First Dance',             time: a(answers, 'tl_first_dance') },
+    { label: 'Parent Dances',           time: a(answers, 'tl_parent_dances') },
+    { label: 'Toasts',                  time: a(answers, 'tl_toasts') },
+    { label: 'Dinner',                  time: a(answers, 'tl_dinner') },
+    { label: 'Sunset Photos ✨',         time: a(answers, 'tl_sunset_photos') },
+    { label: 'Cake Cutting',            time: a(answers, 'tl_cake_cutting') },
+    { label: 'Dance Floor Opens',       time: a(answers, 'tl_dance_floor') },
+    { label: 'Photographer Departure',  time: a(answers, 'tl_photographer_departure') },
+  ] as TimelineRow[]).filter(r => r.time) : (booking.timeline?.blocks.map(b => ({ label: b.title, time: b.startTime })) ?? [])
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: 'rgba(13,21,37,0.85)' }}>
@@ -108,7 +121,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
 
           {/* ── PAGE 1: COVER ─────────────────────────────────────── */}
           <div className="page" style={{ padding: '40px', pageBreakAfter: 'always' }}>
-            {/* Logo + header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div style={{ width: '100px', height: '60px', background: '#f0f3f8', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: '10px', color: '#8b9ab0', fontFamily: 'sans-serif' }}>YOUR LOGO</span>
@@ -123,8 +135,7 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               </div>
             </div>
 
-            {/* Hero photo */}
-            <div style={{ width: '100%', height: '280px', background: '#e8ecf4', borderRadius: '10px', marginBottom: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+            <div style={{ width: '100%', height: '280px', background: '#e8ecf4', borderRadius: '10px', marginBottom: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
               <div style={{ textAlign: 'center', color: '#8b9ab0', fontFamily: 'sans-serif' }}>
                 <div style={{ fontSize: '32px', marginBottom: '8px', opacity: 0.4 }}>📷</div>
                 <div style={{ fontSize: '12px' }}>Engagement photo</div>
@@ -132,7 +143,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               </div>
             </div>
 
-            {/* Three columns */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
               {/* Day-of details */}
               <div>
@@ -161,7 +171,7 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               {/* Location details */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Location Details</div>
-                {[
+                {([
                   ['Venue', booking.venueName],
                   ['Bridal Prep', a(answers, 'bridal_prep_address')],
                   ['Groom Prep', a(answers, 'groom_prep_address')],
@@ -170,7 +180,7 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
                   ['Cocktail Hour', a(answers, 'cocktail_location')],
                   ['Reception', a(answers, 'reception_address')],
                   ['Sunset Photos', a(answers, 'sunset_location')],
-                ].filter(([, v]) => v).map(([label, value]) => (
+                ] as [string, string | undefined][]).filter(([, v]) => v).map(([label, value]) => (
                   <div key={label} style={{ marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>
                     <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{label}: </span>
                     <span style={{ color: '#444' }}>{value}</span>
@@ -224,24 +234,21 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               <tbody>
                 {timelineRows.map((row, i) => {
                   const isGolden = row.label.toLowerCase().includes('golden') || row.label.toLowerCase().includes('sunset')
-                  const isSection = 'section' in row && row.section
                   return (
-                    <>
-                      {isSection && (
-                        <tr key={`section-${i}`}>
+                    <React.Fragment key={i}>
+                      {row.section && (
+                        <tr>
                           <td colSpan={3} style={{ paddingTop: '12px', paddingBottom: '4px', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#666', borderBottom: '1px solid #eee' }}>
-                            {(row as any).section}
+                            {row.section}
                           </td>
                         </tr>
                       )}
-                      <tr key={i} style={{ borderBottom: '1px solid #f4f4f4', background: isGolden ? '#fdf8e8' : 'transparent' }}>
+                      <tr style={{ borderBottom: '1px solid #f4f4f4', background: isGolden ? '#fdf8e8' : 'transparent' }}>
                         <td style={{ padding: '7px 8px 7px 0', fontWeight: 500, color: isGolden ? '#b8891a' : '#333', verticalAlign: 'top' }}>{row.time}</td>
                         <td style={{ padding: '7px 16px 7px 0', color: isGolden ? '#b8891a' : '#1a1a2e', fontWeight: isGolden ? 600 : 400, verticalAlign: 'top' }}>{row.label}</td>
-                        <td style={{ padding: '7px 0', color: '#777', verticalAlign: 'top' }}>
-                          {'notes' in row && row.notes ? row.notes : ''}
-                        </td>
+                        <td style={{ padding: '7px 0', color: '#777', verticalAlign: 'top' }}></td>
                       </tr>
-                    </>
+                    </React.Fragment>
                   )
                 })}
               </tbody>
@@ -256,7 +263,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              {/* Family shots */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
                   Family Shot List
@@ -276,7 +282,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
                     <strong>Note:</strong> {a(answers, 'divorced_parents')}
                   </div>
                 )}
-
                 {a(answers, 'must_have_shots') && (
                   <>
                     <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
@@ -289,7 +294,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
                 )}
               </div>
 
-              {/* Getting ready checklist */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
                   Getting Ready
@@ -308,7 +312,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
                     <span style={{ color: '#333' }}>{item}</span>
                   </div>
                 ))}
-
                 {booking.shotListGroups.filter(g => !g.name.toLowerCase().includes('family')).length > 0 && (
                   <>
                     <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
@@ -365,7 +368,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               )}
             </div>
 
-            {/* Blank notes area */}
             <div style={{ marginTop: '24px' }}>
               <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px' }}>Day-of notes</div>
               {Array.from({ length: 12 }).map((_, i) => (
@@ -373,7 +375,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               ))}
             </div>
 
-            {/* Footer */}
             <div style={{ marginTop: '32px', paddingTop: '12px', borderTop: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', fontFamily: 'sans-serif', fontSize: '9px', color: '#bbb' }}>
               <span>Dossier · Day-of sheet</span>
               <span>Caitee Smith Photography</span>
