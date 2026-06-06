@@ -5,13 +5,26 @@ import { TasksSnapshot } from '@/components/ui/TasksSnapshot'
 import { WeatherWidget } from '@/components/ui/WeatherWidget'
 import { useBookings, useLeads, useAllBookingDetails } from '@/hooks/useData'
 
+function parseLocalDate(dateStr: string) {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
 function daysUntil(dateStr: string) {
-  const diff = new Date(dateStr).getTime() - new Date().getTime()
+  const diff = parseLocalDate(dateStr).getTime() - new Date().getTime()
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  return parseLocalDate(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+function getGreeting(name: string) {
+  const hour = new Date().getHours()
+  const suffix = name ? `, ${name}.` : '.'
+  if (hour < 12) return `Good morning${suffix}`
+  if (hour < 17) return `Good afternoon${suffix}`
+  return `Good evening${suffix}`
 }
 
 export default function DashboardPage() {
@@ -19,9 +32,11 @@ export default function DashboardPage() {
   const { data: leads = [] } = useLeads()
   const { data: allDetails = {} } = useAllBookingDetails()
 
+  const nickname = localStorage.getItem('dossier_nickname') ?? ''
+
   const upcoming = bookings
     .filter(b => b.status !== 'cancelled' && b.status !== 'completed')
-    .sort((a, b) => new Date(a.weddingDate).getTime() - new Date(b.weddingDate).getTime())
+    .sort((a, b) => parseLocalDate(a.weddingDate).getTime() - parseLocalDate(b.weddingDate).getTime())
 
   const nextWedding = upcoming[0]
   const activeLeads = leads.filter(l => l.status !== 'lost' && l.status !== 'booked')
@@ -30,7 +45,7 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <div className="px-10 py-10 max-w-5xl">
-        <PageHeader title="Good morning." subtitle="Here's where things stand." />
+        <PageHeader title={getGreeting(nickname)} subtitle="Here's where things stand." />
 
         <div className="grid grid-cols-4 gap-4 mb-8 stagger-children">
           <StatCard label="This year" value={bookings.filter(b => b.weddingDate.startsWith('2026')).length} sub="weddings booked" />
@@ -54,15 +69,25 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-display text-3xl italic" style={{ color: 'var(--color-gold-warm)' }}>
-                        {daysUntil(nextWedding.weddingDate)}
+                        {daysUntil(nextWedding.weddingDate) === 0 ? '🎉' : Math.abs(daysUntil(nextWedding.weddingDate))}
                       </div>
-                      <p className="text-xs" style={{ color: 'var(--color-navy-300)' }}>days away</p>
+                      <p className="text-xs" style={{ color: 'var(--color-navy-300)' }}>
+                        {daysUntil(nextWedding.weddingDate) === 0
+                          ? 'Today!'
+                          : daysUntil(nextWedding.weddingDate) === 1
+                          ? 'day away'
+                          : daysUntil(nextWedding.weddingDate) > 0
+                          ? 'days away'
+                          : daysUntil(nextWedding.weddingDate) === -1
+                          ? 'day since'
+                          : 'days since'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-xs mb-3" style={{ color: 'var(--color-navy-400)' }}>
                     <span>📅 {formatDate(nextWedding.weddingDate)}</span>
                     <span>📦 {nextWedding.packageName}</span>
-                    <Badge status={nextWedding.status} />
+                    <Badge status={String(nextWedding.status)} />
                   </div>
                   {allDetails[nextWedding.id]?.tasks && (
                     <div className="pt-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>
@@ -114,7 +139,7 @@ export default function DashboardPage() {
                           {outstanding.length === 0 && tasks.length > 0 && (
                             <span className="text-xs" style={{ color: '#276840' }}>✓ done</span>
                           )}
-                          <Badge status={booking.status} />
+                          <Badge status={String(booking.status)} />
                           <span style={{ color: 'var(--color-navy-300)' }}>→</span>
                         </div>
                       </Link>

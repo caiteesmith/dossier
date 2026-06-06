@@ -15,11 +15,13 @@ import AddVendorForm from '@/components/forms/AddVendorForm'
 import AddShotGroupForm from '@/components/forms/AddShotGroupForm'
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 function daysUntil(dateStr: string) {
-  return Math.ceil((new Date(dateStr).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return Math.ceil((new Date(year, month - 1, day).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 }
 
 type Tab = 'overview' | 'tasks' | 'timeline' | 'shotlist' | 'vendors' | 'blog'
@@ -247,14 +249,17 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
             <Row label="Date"    value={formatDate(data.weddingDate)} />
             <Row label="Venue"   value={data.venueName} />
             {data.venueAddress  && <Row label="Address" value={data.venueAddress} />}
-            {data.packageName   && <Row label="Package" value={data.packageName} />}
-            {data.packagePrice  && <Row label="Price"   value={'$' + data.packagePrice.toLocaleString()} />}
-            {data.hoursCovered  && <Row label="Hours"   value={data.hoursCovered + 'h coverage'} />}
+            {data.packageName && (
+              <Row
+                label="Package"
+                value={`${data.packageName}${data.packagePrice ? ' | $' + data.packagePrice.toLocaleString() : ''}`}
+              />
+            )}
+            {data.hoursCovered  && <Row label="Coverage"   value={data.hoursCovered + 'h coverage'} />}
             {data.notes         && <Row label="Notes"   value={data.notes} />}
             {(data as any).partnerOneLegalName && <Row label="Legal name 1" value={(data as any).partnerOneLegalName} />}
             {(data as any).partnerTwoLegalName && <Row label="Legal name 2" value={(data as any).partnerTwoLegalName} />}
             {(data as any).marriedSurname      && <Row label="Married surname" value={(data as any).marriedSurname} />}
-            {(data as any).mailingAddress      && <Row label="Address" value={[(data as any).mailingAddress, (data as any).mailingCity, (data as any).mailingState, (data as any).mailingZip].filter(Boolean).join(', ')} />}
           </div>
         )}
       </Card>
@@ -464,9 +469,10 @@ export default function BookingDetailPage() {
             </h1>
             <p className="mt-1" style={{ color: 'var(--color-navy-500)' }}>{data.venueName} · {formatDate(data.weddingDate)}</p>
             <div className="flex items-center gap-3 mt-2">
-              <Badge status={data.status} />
-              {days > 0 && <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{days} days away</span>}
+              <Badge status={String(data.status)} />
+              {days > 0 && <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{days} {days === 1 ? 'day' : 'days'} away</span>}
               {days === 0 && <span className="text-xs font-medium" style={{ color: 'var(--color-gold-warm)' }}>Today! 🎉</span>}
+              {days < 0 && <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{Math.abs(days)} {Math.abs(days) === 1 ? 'day' : 'days'} since</span>}
               <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{completedTasks}/{data.tasks.length} tasks done</span>
             </div>
           </div>

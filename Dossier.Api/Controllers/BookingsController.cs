@@ -178,6 +178,18 @@ public class BookingsController(DossierDbContext db) : ControllerBase
         return Ok(booking);
     }
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var pid = User.GetPhotographerId();
+        var booking = await db.Bookings
+            .FirstOrDefaultAsync(b => b.Id == id && b.PhotographerId == pid);
+        if (booking is null) return NotFound();
+        db.Bookings.Remove(booking);
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
     private async Task SeedMilestoneTasks(Guid bookingId, Guid photographerId)
     {
         var milestones = new[]

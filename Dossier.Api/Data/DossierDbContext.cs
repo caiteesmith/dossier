@@ -54,5 +54,21 @@ public class DossierDbContext(DbContextOptions<DossierDbContext> options) : DbCo
             .HasMany(g => g.Items)
             .WithOne()
             .HasForeignKey(i => i.GroupId);
+            
+        mb.Entity<Booking>()
+            .Property(b => b.Status)
+            .HasConversion<string>();
+
+        mb.Entity<Lead>()
+            .Property(l => l.Status)
+            .HasConversion<string>();
+
+        mb.Entity<Task_>()
+            .Property(t => t.Category)
+            .HasConversion<string>();
+            
+        mb.Entity<Lead>()
+        .Property(l => l.Source)
+        .HasConversion<string>();
     }
 }

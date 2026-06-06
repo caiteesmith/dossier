@@ -10,17 +10,20 @@ export type FieldType =
   | 'yesno'
   | 'radio'
   | 'checkbox_list'
-  | 'heading'      // section divider, not a real field
+  | 'number'
+  | 'heading'
+  | 'divider'
+  | 'spacer'
 
 export interface QuestionnaireField {
   id: string
   label: string
   type: FieldType
   required?: boolean
-  options?: string[]       // for select, multiselect, radio, checkbox_list
+  options?: string[] 
   placeholder?: string
-  hint?: string            // helper text below field
-  section?: string         // section heading this field belongs to
+  hint?: string  
+  section?: string  
 }
 
 export interface QuestionnaireSection {

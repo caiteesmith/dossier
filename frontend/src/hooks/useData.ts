@@ -4,18 +4,33 @@ import type { Lead, Booking, BookingDetail, TaskCategory } from '@/types'
 
 // ── Leads ─────────────────────────────────────────────────────────
 
+function toSnakeCase(str: string) {
+  return str.replace(/([A-Z])/g, (m, _, i) => (i === 0 ? m.toLowerCase() : '_' + m.toLowerCase()))
+}
+
 export function useLeads() {
   return useQuery<Lead[]>({
     queryKey: ['leads'],
-    queryFn: () => api.get('/api/leads').then(r => r.data),
+    queryFn: () => api.get('/api/leads').then(r =>
+      r.data.map((l: any) => ({
+        ...l,
+        status: toSnakeCase(l.status ?? 'new'),
+        source: l.source ? toSnakeCase(l.source) : null,
+      }))
+    ),
   })
 }
 
 export function useUpdateLeadStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: Lead['status'] }) =>
-      api.patch(`/api/leads/${id}`, { status }),
+    mutationFn: ({ id, status }: { id: string; status: Lead['status'] }) => {
+      const apiStatus = status
+        .split('_')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join('')
+      return api.patch(`/api/leads/${id}`, { status: apiStatus })
+    },
     onMutate: async ({ id, status }) => {
       await qc.cancelQueries({ queryKey: ['leads'] })
       const prev = qc.getQueryData<Lead[]>(['leads'])
@@ -24,8 +39,11 @@ export function useUpdateLeadStatus() {
       )
       return { prev }
     },
-    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['leads'], ctx.prev) },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+    onError: (err, _v, ctx) => {
+      console.log('mutation error:', err)
+      if (ctx?.prev) qc.setQueryData(['leads'], ctx.prev)
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   })
 }
 
@@ -160,5 +178,21 @@ export function usePortalBooking(token: string) {
       }],
     }).then(r => r.data),
     enabled: !!token,
+  })
+}
+
+export function useDeleteBooking() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/bookings/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['bookings'] }),
+  })
+}
+
+export function useDeleteLead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/leads/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   })
 }

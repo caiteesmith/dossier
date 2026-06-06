@@ -9,6 +9,7 @@ import {
   DragOverEvent,
   DragEndEvent,
   closestCorners,
+  useDroppable
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -20,7 +21,7 @@ import AppShell from '@/components/layout/AppShell'
 import NewLeadModal from '@/components/forms/NewLeadModal'
 import NewBookingModal from '@/components/forms/NewBookingModal'
 import { PageHeader, Button } from '@/components/ui'
-import { useLeads, useUpdateLeadStatus } from '@/hooks/useData'
+import { useLeads, useUpdateLeadStatus, useDeleteLead } from '@/hooks/useData'
 import type { Lead, LeadStatus } from '@/types'
 
 const COLUMNS: { status: LeadStatus; label: string }[] = [
@@ -36,9 +37,19 @@ function formatDate(dateStr?: string) {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-// ── Lead card (used both in sortable context and drag overlay) ────
+// ── Lead card ─────────────────────────────────────────────────────
 
-function LeadCardContent({ lead, isDragging = false, onConvert }: { lead: Lead; isDragging?: boolean; onConvert?: (lead: Lead) => void }) {
+function LeadCardContent({
+  lead,
+  isDragging = false,
+  onConvert,
+  onDelete,
+}: {
+  lead: Lead
+  isDragging?: boolean
+  onConvert?: (lead: Lead) => void
+  onDelete?: (id: string) => void
+}) {
   return (
     <div
       className="rounded-xl p-4 space-y-3 transition-shadow"
@@ -74,14 +85,24 @@ function LeadCardContent({ lead, isDragging = false, onConvert }: { lead: Lead; 
           {lead.notes}
         </p>
       )}
-      {!isDragging && onConvert && lead.status !== 'booked' && lead.status !== 'lost' && (
-        <div style={{ borderTop: '1px solid var(--color-navy-100)', paddingTop: '8px', marginTop: '4px' }}>
-          <button
-            onClick={e => { e.stopPropagation(); onConvert(lead) }}
-            style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-steel-600)', background: 'var(--color-navy-50)', border: '1px solid var(--color-navy-200)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}
-          >
-            Convert to booking →
-          </button>
+      {!isDragging && (onConvert || onDelete) && (
+        <div style={{ borderTop: '1px solid var(--color-navy-100)', paddingTop: '8px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {onConvert && lead.status !== 'booked' && lead.status !== 'lost' && (
+            <button
+              onClick={e => { e.stopPropagation(); onConvert(lead) }}
+              style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-steel-600)', background: 'var(--color-navy-50)', border: '1px solid var(--color-navy-200)', borderRadius: '6px', padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}
+            >
+              Convert to booking →
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={e => { e.stopPropagation(); onDelete(lead.id) }}
+              style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '2px 0', textAlign: 'left' }}
+            >
+              Delete lead
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -90,7 +111,15 @@ function LeadCardContent({ lead, isDragging = false, onConvert }: { lead: Lead; 
 
 // ── Sortable lead card ────────────────────────────────────────────
 
-function SortableLeadCard({ lead, onConvert }: { lead: Lead; onConvert?: (lead: Lead) => void }) {
+function SortableLeadCard({
+  lead,
+  onConvert,
+  onDelete,
+}: {
+  lead: Lead
+  onConvert?: (lead: Lead) => void
+  onDelete?: (id: string) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: lead.id,
     data: { lead, type: 'lead' },
@@ -104,7 +133,7 @@ function SortableLeadCard({ lead, onConvert }: { lead: Lead; onConvert?: (lead: 
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <LeadCardContent lead={lead} onConvert={onConvert} />
+      <LeadCardContent lead={lead} onConvert={onConvert} onDelete={onDelete} />
     </div>
   )
 }
@@ -112,17 +141,22 @@ function SortableLeadCard({ lead, onConvert }: { lead: Lead; onConvert?: (lead: 
 // ── Kanban column ─────────────────────────────────────────────────
 
 function KanbanColumn({
+  status,
   label,
   leads,
   isOver,
   onConvert,
+  onDelete,
 }: {
   status: LeadStatus
   label: string
   leads: Lead[]
   isOver: boolean
   onConvert?: (lead: Lead) => void
+  onDelete?: (id: string) => void
 }) {
+  const { setNodeRef } = useDroppable({ id: status })
+
   return (
     <div className="shrink-0 w-64">
       <div className="flex items-center justify-between mb-3">
@@ -135,6 +169,7 @@ function KanbanColumn({
       </div>
 
       <div
+        ref={setNodeRef}
         className="min-h-32 rounded-xl transition-colors duration-150 p-1 -m-1"
         style={{ background: isOver ? 'var(--color-navy-50)' : 'transparent' }}
       >
@@ -153,7 +188,14 @@ function KanbanColumn({
                 </span>
               </div>
             ) : (
-              leads.map(lead => <SortableLeadCard key={lead.id} lead={lead} onConvert={onConvert} />)
+              leads.map(lead => (
+                <SortableLeadCard
+                  key={lead.id}
+                  lead={lead}
+                  onConvert={onConvert}
+                  onDelete={onDelete}
+                />
+              ))
             )}
           </div>
         </SortableContext>
@@ -167,13 +209,13 @@ function KanbanColumn({
 export default function LeadsPage() {
   const { data: leads = [], isLoading } = useLeads()
   const updateStatus = useUpdateLeadStatus()
+  const deleteLead = useDeleteLead()
   const [showLost, setShowLost] = useState(false)
   const [showNewLead, setShowNewLead] = useState(false)
   const [convertLead, setConvertLead] = useState<Lead | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [overId, setOverId] = useState<LeadStatus | null>(null)
-
-  // Local status overrides for optimistic updates during drag
   const [localStatuses, setLocalStatuses] = useState<Record<string, LeadStatus>>({})
 
   const sensors = useSensors(
@@ -195,7 +237,6 @@ export default function LeadsPage() {
 
     const activeLeadId = active.id as string
 
-    // Are we over a column id or another lead id?
     const overColumn = COLUMNS.find(c => c.status === over.id)
     if (overColumn) {
       setOverId(overColumn.status)
@@ -203,7 +244,6 @@ export default function LeadsPage() {
       return
     }
 
-    // We're over another lead — find its column
     const overLead = leads.find(l => l.id === over.id)
     if (overLead) {
       const targetStatus = getLeadStatus(overLead)
@@ -226,7 +266,7 @@ export default function LeadsPage() {
 
     setActiveId(null)
     setOverId(null)
-    setLocalStatuses({})
+    setTimeout(() => setLocalStatuses({}), 300)
   }
 
   function handleDragCancel() {
@@ -280,6 +320,7 @@ export default function LeadsPage() {
                   leads={getColumnLeads(col.status)}
                   isOver={overId === col.status}
                   onConvert={setConvertLead}
+                  onDelete={setConfirmDelete}
                 />
               ))}
 
@@ -293,22 +334,46 @@ export default function LeadsPage() {
                   </div>
                   <div className="space-y-3">
                     {leads.filter(l => l.status === 'lost').map(lead => (
-                      <LeadCardContent key={lead.id} lead={lead} />
+                      <LeadCardContent key={lead.id} lead={lead} onDelete={setConfirmDelete} />
                     ))}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Drag overlay - renders the card being dragged */}
             <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
               {activeLead && <LeadCardContent lead={activeLead} isDragging />}
             </DragOverlay>
           </DndContext>
         )}
       </div>
+
       {showNewLead && <NewLeadModal onClose={() => setShowNewLead(false)} />}
       {convertLead && <NewBookingModal onClose={() => setConvertLead(null)} prefill={convertLead} leadId={convertLead.id} />}
+
+      {/* Delete confirmation dialog */}
+      {confirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ background: 'white', borderRadius: '12px', padding: '24px', maxWidth: '360px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <p className="font-medium text-sm mb-2" style={{ color: 'var(--color-navy-800)' }}>Delete lead?</p>
+            <p className="text-xs mb-6" style={{ color: 'var(--color-navy-400)' }}>This cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                style={{ fontSize: '13px', padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--color-navy-200)', background: 'white', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { deleteLead.mutate(confirmDelete); setConfirmDelete(null) }}
+                style={{ fontSize: '13px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   )
 }

@@ -3,17 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { Card, Button, PageHeader } from '@/components/ui'
 import AppShell from '@/components/layout/AppShell'
 import { WEDDING_QUESTIONNAIRE } from '@/data/questionnaire'
-import { SAMPLE_PACKAGES } from '@/data/sample'
-import type { PackageTemplate } from '@/types'
 import type { QuestionnaireSection } from '@/types/questionnaire'
 import DocumentsTab from './DocumentsTab'
 
-type AccountTab = 'profile' | 'branding' | 'packages' | 'questionnaire' | 'documents'
+type AccountTab = 'profile' | 'branding' | 'questionnaire' | 'documents'
 
 const TABS: { id: AccountTab; label: string }[] = [
   { id: 'profile',       label: 'Profile' },
   { id: 'branding',      label: 'Branding & contact' },
-  { id: 'packages',      label: 'Packages' },
   { id: 'questionnaire', label: 'Questionnaire' },
   { id: 'documents',     label: 'Documents & payments' },
 ]
@@ -68,17 +65,18 @@ function Field({ label, value, onChange, placeholder, type = 'text', hint }: {
 
 function ProfileTab() {
   const [form, setForm] = useState({
-    fullName: 'Caitee Smith',
-    email: 'hello@caiteesmith.com',
+    fullName:     'Caitee Smith',
+    email:        'hello@caiteesmith.com',
     businessName: 'Caitee Smith Photography',
-    website: 'caiteesmith.com',
-    timezone: 'America/New_York',
-    logoUrl: '',
+    website:      'caiteesmith.com',
+    timezone:     'America/New_York',
+    logoUrl:      '',
+    nickname:     localStorage.getItem('dossier_nickname') ?? 'Caitee',
   })
   const [saved, setSaved] = useState(false)
 
   function handleSave() {
-    // TODO: PATCH /photographer with form data
+    localStorage.setItem('dossier_nickname', form.nickname)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -89,6 +87,13 @@ function ProfileTab() {
         <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-navy-700)' }}>Personal info</h3>
         <Field label="Full name" value={form.fullName} onChange={v => setForm(p => ({ ...p, fullName: v }))} />
         <Field label="Email" value={form.email} onChange={v => setForm(p => ({ ...p, email: v }))} type="email" />
+        <Field
+          label="Preferred name / nickname"
+          value={form.nickname}
+          onChange={v => setForm(p => ({ ...p, nickname: v }))}
+          placeholder="What should the dashboard call you?"
+          hint="Used in the dashboard greeting (e.g. Good morning, Caitee.)"
+        />
       </Card>
 
       <Card className="p-6 space-y-4">
@@ -201,123 +206,6 @@ function BrandingTab() {
   )
 }
 
-// ── Packages tab ──────────────────────────────────────────────────
-
-function PackagesTab() {
-  const [packages, setPackages] = useState<PackageTemplate[]>(SAMPLE_PACKAGES)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
-
-  function handleSave() {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
-  }
-
-  function updatePackage(id: string, field: keyof PackageTemplate, value: string | number | boolean | string[]) {
-    setPackages(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p))
-  }
-
-  function addPackage() {
-    const newPkg: PackageTemplate = {
-      id: `pkg-${Date.now()}`,
-      photographerId: 'photographer-1',
-      name: 'New package',
-      price: 0,
-      hoursCovered: 8,
-      includes: [],
-      isActive: true,
-    }
-    setPackages(prev => [...prev, newPkg])
-    setEditingId(newPkg.id)
-  }
-
-  return (
-    <div className="space-y-4 max-w-2xl">
-      <p style={{ fontSize: '13px', color: 'var(--color-navy-400)', lineHeight: '1.5' }}>
-        These are your reusable package templates. When you create a booking, you'll select from these. Editing a template doesn't affect existing bookings.
-      </p>
-
-      {packages.map(pkg => (
-        <Card key={pkg.id} className="p-5">
-          {editingId === pkg.id ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Package name" value={pkg.name} onChange={v => updatePackage(pkg.id, 'name', v)} />
-                <Field label="Price" value={String(pkg.price)} onChange={v => updatePackage(pkg.id, 'price', parseFloat(v) || 0)} type="number" />
-                <Field label="Hours covered" value={String(pkg.hoursCovered ?? '')} onChange={v => updatePackage(pkg.id, 'hoursCovered', parseFloat(v) || 0)} type="number" />
-                <div>
-                  <label style={labelStyle}>Status</label>
-                  <select
-                    value={pkg.isActive ? 'active' : 'inactive'}
-                    onChange={e => updatePackage(pkg.id, 'isActive', e.target.value === 'active')}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>Description</label>
-                <input
-                  value={pkg.description ?? ''}
-                  onChange={e => updatePackage(pkg.id, 'description', e.target.value)}
-                  style={inputStyle}
-                  placeholder="Short description"
-                />
-              </div>
-              <div>
-                <label style={labelStyle}>What's included (one per line)</label>
-                <textarea
-                  value={pkg.includes.join('\n')}
-                  onChange={e => updatePackage(pkg.id, 'includes', e.target.value.split('\n').filter(Boolean))}
-                  rows={4}
-                  style={{ ...inputStyle, resize: 'vertical' as const }}
-                  placeholder="Online gallery&#10;Print release&#10;400+ edited images"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => { setEditingId(null); handleSave() }}>Save package</Button>
-                <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-navy-800)' }}>{pkg.name}</p>
-                  {!pkg.isActive && (
-                    <span style={{ fontSize: '10px', background: 'var(--color-navy-100)', color: 'var(--color-navy-400)', padding: '2px 7px', borderRadius: '20px', fontWeight: 500 }}>
-                      Inactive
-                    </span>
-                  )}
-                </div>
-                {pkg.description && <p style={{ fontSize: '12px', color: 'var(--color-navy-400)', marginBottom: '6px' }}>{pkg.description}</p>}
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--color-navy-900)' }}>${pkg.price.toLocaleString()}</span>
-                  {pkg.hoursCovered && <span style={{ fontSize: '13px', color: 'var(--color-navy-400)', alignSelf: 'flex-end', paddingBottom: '2px' }}>{pkg.hoursCovered}h coverage</span>}
-                </div>
-                {pkg.includes.length > 0 && (
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {pkg.includes.map((item, i) => (
-                      <span key={i} style={{ fontSize: '11px', background: 'var(--color-navy-50)', color: 'var(--color-navy-600)', padding: '2px 8px', borderRadius: '20px' }}>
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <Button size="sm" variant="secondary" onClick={() => setEditingId(pkg.id)}>Edit</Button>
-            </div>
-          )}
-        </Card>
-      ))}
-
-      <Button variant="secondary" size="sm" onClick={addPackage}>+ New package</Button>
-    </div>
-  )
-}
-
 // ── Questionnaire tab ─────────────────────────────────────────────
 
 function QuestionnaireTab() {
@@ -425,7 +313,6 @@ export default function AccountPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px"
               style={{
                 borderBottomColor: activeTab === tab.id ? 'var(--color-navy-800)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--color-navy-900)' : 'var(--color-navy-400)',
@@ -436,6 +323,8 @@ export default function AccountPage() {
                 fontFamily: 'inherit',
                 marginBottom: '-1px',
                 padding: '10px 16px',
+                fontSize: '14px',
+                fontWeight: 500,
               }}
             >
               {tab.label}
@@ -445,7 +334,6 @@ export default function AccountPage() {
 
         {activeTab === 'profile'       && <ProfileTab />}
         {activeTab === 'branding'      && <BrandingTab />}
-        {activeTab === 'packages'      && <PackagesTab />}
         {activeTab === 'questionnaire' && <QuestionnaireTab />}
         {activeTab === 'documents'     && <DocumentsTab />}
       </div>

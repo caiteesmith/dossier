@@ -13,13 +13,20 @@ import ToolsPage from '@/pages/ToolsPage'
 import ContractsPage from '@/pages/studio/ContractsPage'
 import InvoicesPage from '@/pages/studio/InvoicesPage'
 import PortalPage from '@/pages/portal/PortalPage'
+import PackagesPage from './pages/studio/PackagesPage'
+import GearPage from './pages/tools/GearPage'
+import BusinessDocumentsPage from './pages/studio/BusinessDocumentsPage'
+import ExpensesPage from './pages/tools/ExpensesPage'
+import QuestionnairesPage from './pages/studio/QuestionnaireBuilderPage'
+import ProjectsPage from './pages/ProjectsPage'
+import ProjectDetailPage from './pages/ProjectDetailPage'
+import HelpPage from './pages/HelpPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 1000 * 60 * 5, retry: 1 },
   },
 })
-
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -49,7 +56,14 @@ export default function App() {
           <Route path="/tools" element={<ToolsPage />} />
           <Route path="/studio/contracts" element={<ContractsPage />} />
           <Route path="/studio/invoices" element={<InvoicesPage />} />
-          {/* Client portal - outside protected routes, token-based auth */}
+          <Route path="/studio/packages" element={<PackagesPage />} />
+          <Route path="/tools/gear" element={<GearPage />} />
+          <Route path="/studio/documents" element={<BusinessDocumentsPage />} />
+          <Route path="/tools/expenses" element={<ExpensesPage />} />
+          <Route path="/studio/questionnaires" element={<QuestionnairesPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/:id" element={<ProjectDetailPage />} />
+          <Route path="/help" element={<HelpPage />} />
           <Route path="/portal/:token/*" element={<PortalPage />} />
 
           <Route path="*" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />

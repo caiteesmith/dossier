@@ -5,18 +5,28 @@ const NAV = [
   { label: 'Dashboard', to: '/dashboard', icon: '◈' },
   { label: 'Leads',     to: '/leads',     icon: '◎' },
   { label: 'Bookings',  to: '/bookings',  icon: '◉' },
+  { label: 'Projects',  to: '/projects',  icon: '◧' },
   { label: 'Analytics', to: '/analytics', icon: '◇' },
 ]
 
 const STUDIO_ITEMS = [
-  { label: 'Contracts', to: '/studio/contracts' },
-  { label: 'Invoices',  to: '/studio/invoices'  },
+  { label: 'Contracts',      to: '/studio/contracts'      },
+  { label: 'Invoices',       to: '/studio/invoices'       },
+  { label: 'Packages',       to: '/studio/packages'       },
+  { label: 'Documents',      to: '/studio/documents'      },
+  { label: 'Questionnaires', to: '/studio/questionnaires' },
 ]
 
 const TOOL_ITEMS = [
-  { label: 'CODB Calculator',    tool: 'codb'     },
+  { label: 'CODB Calculator',     tool: 'codb'     },
   { label: 'Workflow Calculator', tool: 'workflow' },
   { label: 'Mileage Calculator',  tool: 'mileage'  },
+]
+
+const HELP_ITEMS = [
+  { label: 'User guide',      href: 'https://docs.dossier.app', external: true  },
+  { label: 'Report an issue', href: '/help?tab=issue',           external: false },
+  { label: 'Contact',         href: '/help?tab=contact',         external: false },
 ]
 
 export default function Sidebar() {
@@ -25,10 +35,12 @@ export default function Sidebar() {
 
   const onStudio = location.pathname.startsWith('/studio')
   const onTools  = location.pathname.startsWith('/tools')
+  const onHelp   = location.pathname.startsWith('/help')
   const currentTool = new URLSearchParams(location.search).get('tool')
 
   const [studioOpen, setStudioOpen] = useState(onStudio)
   const [toolsOpen,  setToolsOpen]  = useState(onTools)
+  const [helpOpen,   setHelpOpen]   = useState(onHelp)
 
   function CollapsibleGroup({ label, icon, isOn, open, setOpen, children }: {
     label: string
@@ -80,6 +92,38 @@ export default function Sidebar() {
     )
   }
 
+  function HelpItem({ label, href, external }: { label: string; href: string; external: boolean }) {
+    if (external) {
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 hover:bg-white/5"
+          style={{ color: 'var(--color-navy-400)', textDecoration: 'none' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'white')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-navy-400)')}
+        >
+          {label}
+          <span style={{ marginLeft: '4px', fontSize: '9px', opacity: 0.5 }}>↗</span>
+        </a>
+      )
+    }
+    return (
+      <NavLink
+        to={href}
+        className="flex items-center px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 hover:bg-white/5"
+        style={({ isActive }) => ({
+          color: isActive ? 'white' : 'var(--color-navy-400)',
+          background: isActive ? 'var(--color-navy-700)' : 'transparent',
+          textDecoration: 'none',
+        })}
+      >
+        {label}
+      </NavLink>
+    )
+  }
+
   return (
     <aside
       style={{ width: 'var(--sidebar-width)', background: 'var(--color-navy-900)' }}
@@ -92,7 +136,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto pb-4">
 
         {/* Main nav items */}
         {NAV.map(({ label, to, icon }) => {
@@ -124,6 +168,18 @@ export default function Sidebar() {
         <CollapsibleGroup label="Tools" icon="⬡" isOn={onTools} open={toolsOpen} setOpen={setToolsOpen}>
           {TOOL_ITEMS.map(({ label, tool }) => (
             <SubItem key={tool} to={`/tools?tool=${tool}`} label={label} active={onTools && currentTool === tool} />
+          ))}
+          <SubItem to="/tools/expenses" label="Expense Tracking" active={location.pathname === '/tools/expenses'} />
+          <SubItem to="/tools/gear"     label="Gear Catalog"     active={location.pathname === '/tools/gear'} />
+        </CollapsibleGroup>
+
+        {/* Divider */}
+        <div style={{ height: '1px', background: 'var(--color-navy-800)', margin: '8px 12px' }} />
+
+        {/* Help group */}
+        <CollapsibleGroup label="Help" icon="?" isOn={onHelp} open={helpOpen} setOpen={setHelpOpen}>
+          {HELP_ITEMS.map(({ label, href, external }) => (
+            <HelpItem key={label} label={label} href={href} external={external} />
           ))}
         </CollapsibleGroup>
 
