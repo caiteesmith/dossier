@@ -7,7 +7,7 @@ import type { Lead } from '@/types'
 
 interface Props {
   onClose: () => void
-  prefill?: Partial<Lead>   // from lead conversion
+  prefill?: Partial<Lead>
   leadId?: string
 }
 
@@ -66,7 +66,6 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
   const activePackage = SAMPLE_PACKAGES.find(p => p.isActive)
 
   const [form, setForm] = useState({
-    // Couple
     partnerOneName:      prefill ? `${prefill.firstName ?? ''} ${prefill.lastName ?? ''}`.trim() : '',
     partnerTwoName:      prefill?.partnerName ?? '',
     partnerOneLegalName: '',
@@ -78,25 +77,20 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
     mailingCity:         '',
     mailingState:        '',
     mailingZip:          '',
-    // Wedding day
     weddingDate:    prefill?.weddingDate ?? '',
     ceremonyTime:   '',
     cocktailTime:   '',
     receptionTime:  '',
-    // Venue
     venueName:      prefill?.venueName ?? '',
     venueAddress:   prefill?.venueLocation ?? '',
     venueLat:       '',
     venueLng:       '',
-    // Package
     packageName:    activePackage?.name ?? '',
     packagePrice:   activePackage?.price ? String(activePackage.price) : '',
     hoursCovered:   activePackage?.hoursCovered ? String(activePackage.hoursCovered) : '',
-    // Second shooter
     secondShooter:       '',
     secondShooterEmail:  '',
     secondShooterPhone:  '',
-    // Notes
     notes:          prefill?.notes ?? '',
     internalNotes:  '',
   })
@@ -143,7 +137,6 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
   }
 
   function handleSubmit() {
-    // validate all sections
     const allErrors: Record<string, string> = {}
     SECTIONS.forEach(s => Object.assign(allErrors, validateSection(s.id)))
     if (Object.keys(allErrors).length) { setErrors(allErrors); return }
@@ -208,28 +201,18 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
               <button onClick={onClose} style={{ fontSize: '18px', color: 'var(--color-navy-400)', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: '4px' }}>×</button>
             </div>
 
-            {/* Section pills */}
             <div style={{ display: 'flex', gap: '4px', marginBottom: '-1px' }}>
               {SECTIONS.map((s, i) => {
                 const sectionErrors = Object.keys(validateSection(s.id)).length > 0 && Object.keys(errors).some(k => validateSection(s.id)[k])
                 return (
-                  <button
-                    key={s.id}
-                    onClick={() => goTo(s.id)}
+                  <button key={s.id} onClick={() => goTo(s.id)}
                     style={{
-                      padding: '8px 14px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      background: 'transparent',
-                      border: 'none',
+                      padding: '8px 14px', fontSize: '12px', fontWeight: 500,
+                      background: 'transparent', border: 'none',
                       borderBottom: `2px solid ${section === s.id ? 'var(--color-navy-800)' : 'transparent'}`,
                       color: section === s.id ? 'var(--color-navy-900)' : sectionErrors ? '#b91c1c' : i < sectionIdx ? 'var(--color-steel-500)' : 'var(--color-navy-400)',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      marginBottom: '-1px',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                      cursor: 'pointer', fontFamily: 'inherit', marginBottom: '-1px', whiteSpace: 'nowrap',
+                    }}>
                     {i < sectionIdx && !sectionErrors ? '✓ ' : ''}{s.label}
                   </button>
                 )
@@ -239,12 +222,9 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
 
           {/* Body */}
           <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
-
             {section === 'couple' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-
                 <p style={{ gridColumn: 'span 2', fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--color-navy-400)', fontWeight: 600, margin: 0 }}>Names</p>
-
                 <Field label="Partner 1 full name" required>
                   <input value={form.partnerOneName} onChange={e => set('partnerOneName', e.target.value)} style={{ ...iS, borderColor: errors.partnerOneName ? '#fca5a5' : undefined }} autoFocus placeholder="e.g. Lauren Mitchell" />
                   {errField('partnerOneName')}
@@ -262,7 +242,6 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
                 <Field label="Married surname" span2>
                   <input value={form.marriedSurname} onChange={e => set('marriedSurname', e.target.value)} placeholder="e.g. Mitchell, Mitchell-Chen" style={iS} />
                 </Field>
-
                 <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--color-navy-100)', paddingTop: '14px' }}>
                   <p style={{ fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--color-navy-400)', fontWeight: 600, marginBottom: '12px' }}>Contact</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -277,7 +256,6 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
                     </div>
                   </div>
                 </div>
-
                 <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--color-navy-100)', paddingTop: '14px' }}>
                   <p style={{ fontSize: '11px', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--color-navy-400)', fontWeight: 600, marginBottom: '12px' }}>Mailing address</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -290,18 +268,11 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
                       <input value={form.mailingCity} onChange={e => set('mailingCity', e.target.value)} style={iS} />
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <div>
-                        <label style={lS}>State</label>
-                        <input value={form.mailingState} onChange={e => set('mailingState', e.target.value)} placeholder="NY" style={iS} />
-                      </div>
-                      <div>
-                        <label style={lS}>ZIP</label>
-                        <input value={form.mailingZip} onChange={e => set('mailingZip', e.target.value)} placeholder="12345" style={iS} />
-                      </div>
+                      <div><label style={lS}>State</label><input value={form.mailingState} onChange={e => set('mailingState', e.target.value)} placeholder="NY" style={iS} /></div>
+                      <div><label style={lS}>ZIP</label><input value={form.mailingZip} onChange={e => set('mailingZip', e.target.value)} placeholder="12345" style={iS} /></div>
                     </div>
                   </div>
                 </div>
-
               </div>
             )}
 
@@ -311,15 +282,9 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
                   <input type="date" value={form.weddingDate} onChange={e => set('weddingDate', e.target.value)} style={{ ...iS, borderColor: errors.weddingDate ? '#fca5a5' : undefined }} />
                   {errField('weddingDate')}
                 </Field>
-                <Field label="Ceremony start">
-                  <input type="time" value={form.ceremonyTime} onChange={e => set('ceremonyTime', e.target.value)} style={iS} />
-                </Field>
-                <Field label="Cocktail hour start">
-                  <input type="time" value={form.cocktailTime} onChange={e => set('cocktailTime', e.target.value)} style={iS} />
-                </Field>
-                <Field label="Reception start">
-                  <input type="time" value={form.receptionTime} onChange={e => set('receptionTime', e.target.value)} style={iS} />
-                </Field>
+                <Field label="Ceremony start"><input type="time" value={form.ceremonyTime} onChange={e => set('ceremonyTime', e.target.value)} style={iS} /></Field>
+                <Field label="Cocktail hour start"><input type="time" value={form.cocktailTime} onChange={e => set('cocktailTime', e.target.value)} style={iS} /></Field>
+                <Field label="Reception start"><input type="time" value={form.receptionTime} onChange={e => set('receptionTime', e.target.value)} style={iS} /></Field>
               </div>
             )}
 
@@ -332,42 +297,24 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
                 <Field label="Venue address" span2>
                   <input value={form.venueAddress} onChange={e => set('venueAddress', e.target.value)} placeholder="123 Main St, City, State" style={iS} />
                 </Field>
-                <Field label="Latitude">
-                  <input value={form.venueLat} onChange={e => set('venueLat', e.target.value)} placeholder="e.g. 44.3793" style={iS} />
-                </Field>
-                <Field label="Longitude">
-                  <input value={form.venueLng} onChange={e => set('venueLng', e.target.value)} placeholder="e.g. -73.9799" style={iS} />
-                </Field>
+                <Field label="Latitude"><input value={form.venueLat} onChange={e => set('venueLat', e.target.value)} placeholder="e.g. 44.3793" style={iS} /></Field>
+                <Field label="Longitude"><input value={form.venueLng} onChange={e => set('venueLng', e.target.value)} placeholder="e.g. -73.9799" style={iS} /></Field>
                 <p style={{ gridColumn: 'span 2', fontSize: '11px', color: 'var(--color-navy-300)', lineHeight: '1.5' }}>
-                  Latitude and longitude enable live weather forecasts and accurate sunset/golden hour times. Look up venue coordinates on Google Maps (right-click → "What's here?").
+                  Latitude and longitude enable live weather forecasts and accurate sunset/golden hour times.
                 </p>
               </div>
             )}
 
             {section === 'package' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                {/* Package quick-select */}
                 <div style={{ gridColumn: 'span 2', display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                   {SAMPLE_PACKAGES.filter(p => p.isActive).map(pkg => (
-                    <button
-                      key={pkg.id}
-                      onClick={() => {
-                        set('packageName', pkg.name)
-                        set('packagePrice', String(pkg.price))
-                        set('hoursCovered', String(pkg.hoursCovered ?? ''))
-                      }}
-                      style={{
-                        padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 500,
-                        border: '1px solid var(--color-navy-200)', cursor: 'pointer', fontFamily: 'inherit',
-                        background: form.packageName === pkg.name ? 'var(--color-navy-800)' : 'white',
-                        color: form.packageName === pkg.name ? 'white' : 'var(--color-navy-600)',
-                      }}
-                    >
+                    <button key={pkg.id} onClick={() => { set('packageName', pkg.name); set('packagePrice', String(pkg.price)); set('hoursCovered', String(pkg.hoursCovered ?? '')) }}
+                      style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 500, border: '1px solid var(--color-navy-200)', cursor: 'pointer', fontFamily: 'inherit', background: form.packageName === pkg.name ? 'var(--color-navy-800)' : 'white', color: form.packageName === pkg.name ? 'white' : 'var(--color-navy-600)' }}>
                       {pkg.name} — ${pkg.price.toLocaleString()}
                     </button>
                   ))}
                 </div>
-
                 <Field label="Package name" required span2>
                   <input value={form.packageName} onChange={e => set('packageName', e.target.value)} style={{ ...iS, borderColor: errors.packageName ? '#fca5a5' : undefined }} placeholder="e.g. Signature" />
                   {errField('packageName')}
@@ -378,22 +325,13 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
                     <input type="number" value={form.packagePrice} onChange={e => set('packagePrice', e.target.value)} min={0} step={100} style={{ ...iS, paddingLeft: '24px' }} />
                   </div>
                 </Field>
-                <Field label="Hours covered">
-                  <input type="number" value={form.hoursCovered} onChange={e => set('hoursCovered', e.target.value)} min={1} step={0.5} style={iS} />
-                </Field>
-
+                <Field label="Hours covered"><input type="number" value={form.hoursCovered} onChange={e => set('hoursCovered', e.target.value)} min={1} step={0.5} style={iS} /></Field>
                 <div style={{ gridColumn: 'span 2', borderTop: '1px solid var(--color-navy-100)', paddingTop: '14px', marginTop: '4px' }}>
                   <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-navy-400)', fontWeight: 600, marginBottom: '12px' }}>Second shooter (optional)</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <Field label="Name" span2>
-                      <input value={form.secondShooter} onChange={e => set('secondShooter', e.target.value)} placeholder="Full name" style={iS} />
-                    </Field>
-                    <Field label="Email">
-                      <input type="email" value={form.secondShooterEmail} onChange={e => set('secondShooterEmail', e.target.value)} style={iS} />
-                    </Field>
-                    <Field label="Phone">
-                      <input type="tel" value={form.secondShooterPhone} onChange={e => set('secondShooterPhone', e.target.value)} style={iS} />
-                    </Field>
+                    <Field label="Name" span2><input value={form.secondShooter} onChange={e => set('secondShooter', e.target.value)} placeholder="Full name" style={iS} /></Field>
+                    <Field label="Email"><input type="email" value={form.secondShooterEmail} onChange={e => set('secondShooterEmail', e.target.value)} style={iS} /></Field>
+                    <Field label="Phone"><input type="tel" value={form.secondShooterPhone} onChange={e => set('secondShooterPhone', e.target.value)} style={iS} /></Field>
                   </div>
                 </div>
               </div>
@@ -405,7 +343,7 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
                   <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={4} placeholder="Anything to communicate to the couple..." style={{ ...iS, resize: 'vertical' as const }} />
                 </Field>
                 <Field label="Internal notes (not visible to couple)">
-                  <textarea value={form.internalNotes} onChange={e => set('internalNotes', e.target.value)} rows={4} placeholder="Notes for yourself — second shooter details, special requirements, etc." style={{ ...iS, resize: 'vertical' as const }} />
+                  <textarea value={form.internalNotes} onChange={e => set('internalNotes', e.target.value)} rows={4} placeholder="Notes for yourself..." style={{ ...iS, resize: 'vertical' as const }} />
                 </Field>
               </div>
             )}
@@ -413,16 +351,8 @@ export default function NewBookingModal({ onClose, prefill, leadId }: Props) {
 
           {/* Footer */}
           <div style={{ padding: '14px 24px', borderTop: '1px solid var(--color-navy-100)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-fog)' }}>
-            <button
-              onClick={prevSection}
-              disabled={isFirst}
-              style={{ fontSize: '13px', color: isFirst ? 'var(--color-navy-200)' : 'var(--color-navy-500)', background: 'none', border: 'none', cursor: isFirst ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
-            >
-              ← Back
-            </button>
-            <span style={{ fontSize: '12px', color: 'var(--color-navy-400)' }}>
-              {sectionIdx + 1} of {SECTIONS.length}
-            </span>
+            <button onClick={prevSection} disabled={isFirst} style={{ fontSize: '13px', color: isFirst ? 'var(--color-navy-200)' : 'var(--color-navy-500)', background: 'none', border: 'none', cursor: isFirst ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>← Back</button>
+            <span style={{ fontSize: '12px', color: 'var(--color-navy-400)' }}>{sectionIdx + 1} of {SECTIONS.length}</span>
             {isLast ? (
               <Button onClick={handleSubmit} disabled={addBooking.isPending}>
                 {addBooking.isPending ? 'Creating...' : 'Create booking'}

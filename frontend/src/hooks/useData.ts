@@ -196,3 +196,32 @@ export function useDeleteLead() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   })
 }
+
+export function useUpdateWorkflowStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, workflowStatus }: { id: string; workflowStatus: string }) =>
+      api.patch(`/api/bookings/${id}`, { workflowStatus }).then(r => r.data),
+    onMutate: async ({ id, workflowStatus }) => {
+      await queryClient.cancelQueries({ queryKey: ['bookings', id] })
+      const prev = queryClient.getQueryData(['bookings', id])
+      queryClient.setQueryData(['bookings', id], (old: any) =>
+        old ? { ...old, workflowStatus } : old
+      )
+      // also update the list
+      queryClient.setQueryData(['bookings'], (old: any[]) =>
+        Array.isArray(old)
+          ? old.map(b => b.id === id ? { ...b, workflowStatus } : b)
+          : old
+      )
+      return { prev }
+    },
+    onError: (_err, { id }, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(['bookings', id], ctx.prev)
+    },
+    onSettled: (_data, _err, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['bookings', id] })
+      queryClient.invalidateQueries({ queryKey: ['bookings'] })
+    },
+  })
+}

@@ -85,6 +85,7 @@ public class Booking
     [Column("portal_token")]             public Guid          PortalToken        { get; set; }
     [Column("portal_enabled")]           public bool          PortalEnabled      { get; set; }
     [Column("notes")]                    public string?       Notes              { get; set; }
+    [Column("workflow_status")]           public string        WorkflowStatus      { get; set; } = "booked";
     [Column("created_at")]               public DateTime      CreatedAt          { get; set; }
     [Column("updated_at")]               public DateTime      UpdatedAt          { get; set; }
 }

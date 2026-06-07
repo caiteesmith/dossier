@@ -3,25 +3,23 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/lib/auth'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const LoginPage            = lazy(() => import('@/pages/LoginPage'))
-const DashboardPage        = lazy(() => import('@/pages/DashboardPage'))
-const LeadsPage            = lazy(() => import('@/pages/LeadsPage'))
-const BookingsPage         = lazy(() => import('@/pages/BookingsPage'))
-const BookingDetailPage    = lazy(() => import('@/pages/booking/BookingDetailPage'))
-const AnalyticsPage        = lazy(() => import('@/pages/AnalyticsPage'))
-const AccountPage          = lazy(() => import('@/pages/account/AccountPage'))
-const ToolsPage            = lazy(() => import('@/pages/ToolsPage'))
-const ContractsPage        = lazy(() => import('@/pages/studio/ContractsPage'))
-const InvoicesPage         = lazy(() => import('@/pages/studio/InvoicesPage'))
-const PackagesPage         = lazy(() => import('@/pages/studio/PackagesPage'))
-const GearPage             = lazy(() => import('@/pages/tools/GearPage'))
+const LoginPage             = lazy(() => import('@/pages/LoginPage'))
+const DashboardPage         = lazy(() => import('@/pages/DashboardPage'))
+const LeadsPage             = lazy(() => import('@/pages/LeadsPage'))
+const BookingsPage          = lazy(() => import('@/pages/BookingsPage'))
+const BookingDetailPage     = lazy(() => import('@/pages/booking/BookingDetailPage'))
+const AnalyticsPage         = lazy(() => import('@/pages/AnalyticsPage'))
+const AccountPage           = lazy(() => import('@/pages/account/AccountPage'))
+const ToolsPage             = lazy(() => import('@/pages/ToolsPage'))
+const ContractsPage         = lazy(() => import('@/pages/studio/ContractsPage'))
+const InvoicesPage          = lazy(() => import('@/pages/studio/InvoicesPage'))
+const PackagesPage          = lazy(() => import('@/pages/studio/PackagesPage'))
+const GearPage              = lazy(() => import('@/pages/tools/GearPage'))
 const BusinessDocumentsPage = lazy(() => import('@/pages/studio/BusinessDocumentsPage'))
-const ExpensesPage         = lazy(() => import('@/pages/tools/ExpensesPage'))
-const QuestionnairesPage   = lazy(() => import('@/pages/studio/QuestionnaireBuilderPage'))
-const ProjectsPage         = lazy(() => import('@/pages/ProjectsPage'))
-const ProjectDetailPage    = lazy(() => import('@/pages/ProjectDetailPage'))
-const HelpPage             = lazy(() => import('@/pages/HelpPage'))
-const PortalPage           = lazy(() => import('@/pages/portal/PortalPage'))
+const ExpensesPage          = lazy(() => import('@/pages/tools/ExpensesPage'))
+const QuestionnairesPage    = lazy(() => import('@/pages/studio/QuestionnaireBuilderPage'))
+const HelpPage              = lazy(() => import('@/pages/HelpPage'))
+const PortalPage            = lazy(() => import('@/pages/portal/PortalPage'))
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,10 +47,10 @@ export default function App() {
         <AuthProvider>
           <Suspense fallback={<Loader />}>
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
+              <Route path="/login"          element={<LoginPage />} />
               <Route path="/portal/:token/*" element={<PortalPage />} />
 
-              <Route path="/" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
+              <Route path="/"             element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
               <Route path="/dashboard"    element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/leads"        element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
               <Route path="/bookings"     element={<ProtectedRoute><BookingsPage /></ProtectedRoute>} />
@@ -67,8 +65,6 @@ export default function App() {
               <Route path="/studio/packages"       element={<ProtectedRoute><PackagesPage /></ProtectedRoute>} />
               <Route path="/studio/documents"      element={<ProtectedRoute><BusinessDocumentsPage /></ProtectedRoute>} />
               <Route path="/studio/questionnaires" element={<ProtectedRoute><QuestionnairesPage /></ProtectedRoute>} />
-              <Route path="/projects"     element={<ProtectedRoute><ProjectsPage /></ProtectedRoute>} />
-              <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetailPage /></ProtectedRoute>} />
               <Route path="/help"         element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
 
               <Route path="*" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />

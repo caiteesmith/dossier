@@ -19,7 +19,27 @@ public class BookingsController(DossierDbContext db) : ControllerBase
             .Where(b => b.PhotographerId == pid)
             .OrderBy(b => b.WeddingDate)
             .ToListAsync();
-        return Ok(bookings);
+        return Ok(bookings.Select(b => new {
+            b.Id,
+            b.PhotographerId,
+            b.LeadId,
+            b.PartnerOneName,
+            b.PartnerTwoName,
+            b.Email,
+            b.Phone,
+            WeddingDate = b.WeddingDate.ToString("yyyy-MM-dd"),
+            b.VenueName,
+            b.PackageName,
+            b.PackagePrice,
+            b.HoursCovered,
+            Status = b.Status.ToString().ToLower(),
+            b.WorkflowStatus,
+            PortalToken = b.PortalToken.ToString(),
+            b.PortalEnabled,
+            b.Notes,
+            b.CreatedAt,
+            b.UpdatedAt,
+        }));
     }
 
     // GET api/bookings/{id}
@@ -75,6 +95,7 @@ public class BookingsController(DossierDbContext db) : ControllerBase
             booking.PackagePrice,
             booking.HoursCovered,
             Status = booking.Status.ToString().ToLower(),
+            booking.WorkflowStatus,
             PortalToken = booking.PortalToken.ToString(),
             booking.PortalEnabled,
             booking.Notes,
@@ -117,6 +138,7 @@ public class BookingsController(DossierDbContext db) : ControllerBase
             PackagePrice        = req.PackagePrice,
             HoursCovered        = req.HoursCovered,
             Status              = BookingStatus.Confirmed,
+            WorkflowStatus      = "booked",
             PortalToken         = Guid.NewGuid(),
             PortalEnabled       = true,
             Notes               = req.Notes,
@@ -172,6 +194,7 @@ public class BookingsController(DossierDbContext db) : ControllerBase
         if (req.HoursCovered        is not null) booking.HoursCovered        = req.HoursCovered;
         if (req.Status              is not null) booking.Status              = req.Status.Value;
         if (req.Notes               is not null) booking.Notes               = req.Notes;
+        if (req.WorkflowStatus       is not null) booking.WorkflowStatus       = req.WorkflowStatus;
 
         booking.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -229,22 +252,22 @@ public record CreateBookingRequest(
     string   Email,
     DateOnly WeddingDate,
     string   VenueName,
-    Guid?    LeadId             = null,
+    Guid?    LeadId              = null,
     string?  PartnerOneLegalName = null,
     string?  PartnerTwoLegalName = null,
-    string?  MarriedSurname     = null,
-    string?  Phone              = null,
-    string?  MailingAddress     = null,
-    string?  MailingCity        = null,
-    string?  MailingState       = null,
-    string?  MailingZip         = null,
-    string?  VenueAddress       = null,
-    decimal? VenueLat           = null,
-    decimal? VenueLng           = null,
-    string?  PackageName        = null,
-    decimal? PackagePrice       = null,
-    decimal? HoursCovered       = null,
-    string?  Notes              = null
+    string?  MarriedSurname      = null,
+    string?  Phone               = null,
+    string?  MailingAddress      = null,
+    string?  MailingCity         = null,
+    string?  MailingState        = null,
+    string?  MailingZip          = null,
+    string?  VenueAddress        = null,
+    decimal? VenueLat            = null,
+    decimal? VenueLng            = null,
+    string?  PackageName         = null,
+    decimal? PackagePrice        = null,
+    decimal? HoursCovered        = null,
+    string?  Notes               = null
 );
 
 public record UpdateBookingRequest(
@@ -268,5 +291,6 @@ public record UpdateBookingRequest(
     decimal?       PackagePrice        = null,
     decimal?       HoursCovered        = null,
     BookingStatus? Status              = null,
-    string?        Notes               = null
+    string?        Notes               = null,
+    string?        WorkflowStatus      = null
 );

@@ -73,8 +73,10 @@ export interface Booking {
   portalToken: string
   portalEnabled: boolean
   notes?: string
+  workflowStatus?: string
   createdAt: string
   updatedAt: string
+  projectId?: string
 }
 
 export interface Task {

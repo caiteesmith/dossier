@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import AppShell from '@/components/layout/AppShell'
 import { Card, StatCard, Badge, PageHeader } from '@/components/ui'
+import { WorkflowBadge } from '@/components/ui/WorkflowBadge'
 import { TasksSnapshot } from '@/components/ui/TasksSnapshot'
 import { WeatherWidget } from '@/components/ui/WeatherWidget'
 import { useBookings, useLeads, useAllBookingDetails } from '@/hooks/useData'
@@ -34,13 +35,52 @@ export default function DashboardPage() {
 
   const nickname = localStorage.getItem('dossier_nickname') ?? ''
 
-  const upcoming = bookings
-    .filter(b => b.status !== 'cancelled' && b.status !== 'completed')
-    .sort((a, b) => parseLocalDate(a.weddingDate).getTime() - parseLocalDate(b.weddingDate).getTime())
+  const allSorted = [...bookings].sort((a, b) =>
+    parseLocalDate(a.weddingDate).getTime() - parseLocalDate(b.weddingDate).getTime()
+  )
+
+  const upcoming = allSorted.filter(b => daysUntil(b.weddingDate) >= 0)
+  const pastBookings = allSorted.filter(b => daysUntil(b.weddingDate) < 0).reverse()
 
   const nextWedding = upcoming[0]
   const activeLeads = leads.filter(l => l.status !== 'lost' && l.status !== 'booked')
   const revenue = bookings.filter(b => b.status === 'confirmed').reduce((sum, b) => sum + (b.packagePrice ?? 0), 0)
+
+  function BookingRow({ booking, i, dimmed }: { booking: typeof bookings[0]; i: number; dimmed?: boolean }) {
+    const tasks = allDetails[booking.id]?.tasks ?? []
+    const outstanding = tasks.filter(t => !t.completed)
+    return (
+      <div style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)', opacity: dimmed ? 0.6 : 1 }}>
+        <Link
+          to={"/bookings/" + booking.id}
+          className="flex items-center justify-between px-5 py-3.5 transition-colors"
+          style={{ color: 'inherit' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-fog)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <div>
+            <p className="font-medium text-sm" style={{ color: 'var(--color-navy-800)' }}>
+              {booking.partnerOneName} & {booking.partnerTwoName}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>{booking.venueName}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{formatDate(booking.weddingDate)}</span>
+            {outstanding.length > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--color-navy-50)', color: 'var(--color-navy-500)' }}>
+                {outstanding.length} tasks
+              </span>
+            )}
+            {outstanding.length === 0 && tasks.length > 0 && (
+              <span className="text-xs" style={{ color: '#276840' }}>✓ done</span>
+            )}
+            <WorkflowBadge status={(booking as any).workflowStatus} />
+            <span style={{ color: 'var(--color-navy-300)' }}>→</span>
+          </div>
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <AppShell>
@@ -72,22 +112,18 @@ export default function DashboardPage() {
                         {daysUntil(nextWedding.weddingDate) === 0 ? '🎉' : Math.abs(daysUntil(nextWedding.weddingDate))}
                       </div>
                       <p className="text-xs" style={{ color: 'var(--color-navy-300)' }}>
-                        {daysUntil(nextWedding.weddingDate) === 0
-                          ? 'Today!'
-                          : daysUntil(nextWedding.weddingDate) === 1
-                          ? 'day away'
-                          : daysUntil(nextWedding.weddingDate) > 0
-                          ? 'days away'
-                          : daysUntil(nextWedding.weddingDate) === -1
-                          ? 'day since'
-                          : 'days since'}
+                        {daysUntil(nextWedding.weddingDate) === 0 ? 'Today!'
+                          : daysUntil(nextWedding.weddingDate) === 1 ? 'day away'
+                          : daysUntil(nextWedding.weddingDate) > 0 ? 'days away'
+                          : daysUntil(nextWedding.weddingDate) === -1 ? 'day since' : 'days since'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 text-xs mb-3" style={{ color: 'var(--color-navy-400)' }}>
+                  <div className="flex items-center gap-3 text-xs mb-3" style={{ color: 'var(--color-navy-400)' }}>
                     <span>📅 {formatDate(nextWedding.weddingDate)}</span>
                     <span>📦 {nextWedding.packageName}</span>
                     <Badge status={String(nextWedding.status)} />
+                    <WorkflowBadge status={(nextWedding as any).workflowStatus} />
                   </div>
                   {allDetails[nextWedding.id]?.tasks && (
                     <div className="pt-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>
@@ -105,49 +141,34 @@ export default function DashboardPage() {
               </Card>
             )}
 
-            <h2 className="text-xs uppercase tracking-widest pt-2" style={{ color: 'var(--color-navy-400)' }}>All upcoming</h2>
-            <Card>
-              <div className="stagger-children">
-                {upcoming.map((booking, i) => {
-                  const tasks = allDetails[booking.id]?.tasks ?? []
-                  const outstanding = tasks.filter(t => !t.completed)
-                  return (
-                    <div
-                      key={booking.id}
-                      style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)' }}
-                    >
-                      <Link
-                        to={"/bookings/" + booking.id}
-                        className="flex items-center justify-between px-5 py-3.5 transition-colors"
-                        style={{ color: 'inherit' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-fog)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <div>
-                          <p className="font-medium text-sm" style={{ color: 'var(--color-navy-800)' }}>
-                            {booking.partnerOneName} & {booking.partnerTwoName}
-                          </p>
-                          <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>{booking.venueName}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>{formatDate(booking.weddingDate)}</span>
-                          {outstanding.length > 0 && (
-                            <span className="text-xs px-2 py-0.5 rounded" style={{ background: 'var(--color-navy-50)', color: 'var(--color-navy-500)' }}>
-                              {outstanding.length} tasks
-                            </span>
-                          )}
-                          {outstanding.length === 0 && tasks.length > 0 && (
-                            <span className="text-xs" style={{ color: '#276840' }}>✓ done</span>
-                          )}
-                          <Badge status={String(booking.status)} />
-                          <span style={{ color: 'var(--color-navy-300)' }}>→</span>
-                        </div>
+            {upcoming.length > 0 && (
+              <>
+                <h2 className="text-xs uppercase tracking-widest pt-2" style={{ color: 'var(--color-navy-400)' }}>All upcoming</h2>
+                <Card>
+                  <div className="stagger-children">
+                    {upcoming.map((booking, i) => <BookingRow key={booking.id} booking={booking} i={i} />)}
+                  </div>
+                </Card>
+              </>
+            )}
+
+            {pastBookings.length > 0 && (
+              <>
+                <h2 className="text-xs uppercase tracking-widest pt-2" style={{ color: 'var(--color-navy-400)' }}>Past</h2>
+                <Card>
+                  <div>
+                    {pastBookings.slice(0, 5).map((booking, i) => <BookingRow key={booking.id} booking={booking} i={i} dimmed />)}
+                  </div>
+                  {pastBookings.length > 5 && (
+                    <div className="px-5 py-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>
+                      <Link to="/bookings" className="text-xs hover:opacity-70 transition-opacity" style={{ color: 'var(--color-steel-500)' }}>
+                        View all {pastBookings.length} past weddings →
                       </Link>
                     </div>
-                  )
-                })}
-              </div>
-            </Card>
+                  )}
+                </Card>
+              </>
+            )}
           </div>
 
           <div className="col-span-2 space-y-4">
@@ -157,21 +178,15 @@ export default function DashboardPage() {
                 {leads.filter(l => l.status !== 'lost').slice(0, 6).map((lead, i) => (
                   <div key={lead.id} className="px-4 py-3" style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)' }}>
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium" style={{ color: 'var(--color-navy-800)' }}>
-                        {lead.firstName} {lead.lastName}
-                      </p>
+                      <p className="text-sm font-medium" style={{ color: 'var(--color-navy-800)' }}>{lead.firstName} {lead.lastName}</p>
                       <Badge status={lead.status} />
                     </div>
-                    {lead.weddingDate && (
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>{formatDate(lead.weddingDate)}</p>
-                    )}
+                    {lead.weddingDate && <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>{formatDate(lead.weddingDate)}</p>}
                   </div>
                 ))}
               </div>
               <div className="px-4 py-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>
-                <Link to="/leads" className="text-xs transition-colors hover:opacity-70" style={{ color: 'var(--color-steel-500)' }}>
-                  View all leads →
-                </Link>
+                <Link to="/leads" className="text-xs transition-colors hover:opacity-70" style={{ color: 'var(--color-steel-500)' }}>View all leads →</Link>
               </div>
             </Card>
           </div>
