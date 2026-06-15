@@ -31,6 +31,13 @@ function addMinutes(hhmm: string, minutes: number): string {
   return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
+function addDays(dateStr: string, days: number) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  date.setDate(date.getDate() + days)
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
 const card: React.CSSProperties = {
   background: 'white',
   borderRadius: '14px',
@@ -213,7 +220,7 @@ export default function PortalDashboard({ booking, onNavigate }: Props) {
         <div style={card}>
           <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #f0ede8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <p style={sectionTitle}>Day-of timeline</p>
+              <p style={sectionTitle}>Day-of schedule</p>
               <p style={{ fontSize: '12px', color: '#aaa', marginTop: '2px' }}>Key moments from your timeline</p>
             </div>
             <button onClick={() => onNavigate('timeline')} style={viewAll}>Full timeline →</button>
@@ -246,6 +253,65 @@ export default function PortalDashboard({ booking, onNavigate }: Props) {
         </div>
       )}
 
+      {/* ── Key dates & milestones ───────────────────────────── */}
+      <div style={card}>
+        <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #f0ede8' }}>
+          <p style={sectionTitle}>Key dates</p>
+          <p style={{ fontSize: '12px', color: '#aaa', marginTop: '2px' }}>Important milestones for your wedding photography</p>
+        </div>
+        <div>
+          {[
+            {
+              icon: '📋',
+              label: 'Questionnaire due',
+              detail: '2 weeks before your wedding',
+              date: addDays(booking.weddingDate, -14),
+              action: () => onNavigate('questionnaire'),
+              actionLabel: 'Fill out →',
+            },
+            {
+              icon: '💰',
+              label: 'Final payment due',
+              detail: '30 days before your wedding',
+              date: addDays(booking.weddingDate, -30),
+              action: () => onNavigate('documents'),
+              actionLabel: 'View →',
+            },
+            {
+              icon: '📷',
+              label: 'Your wedding day',
+              detail: booking.venueName,
+              date: formatDate(booking.weddingDate),
+              action: null,
+              actionLabel: null,
+            },
+            {
+              icon: '🖼️',
+              label: 'Gallery delivery',
+              detail: `${booking.photographer?.galleryDeliveryWeeks ?? 8} weeks after your wedding`,
+              date: addDays(booking.weddingDate, (booking.photographer?.galleryDeliveryWeeks ?? 8) * 7),
+              action: null,
+              actionLabel: null,
+            },
+          ].map((item, i) => (
+            <div key={i} style={{
+              padding: '14px 20px',
+              borderTop: i === 0 ? 'none' : '1px solid #f7f5f2',
+              display: 'flex', alignItems: 'center', gap: '14px',
+            }}>
+              <span style={{ fontSize: '20px', flexShrink: 0 }}>{item.icon}</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: '#1a1a2e' }}>{item.label}</p>
+                <p style={{ fontSize: '12px', color: '#aaa', marginTop: '1px' }}>{item.date} · {item.detail}</p>
+              </div>
+              {item.action && item.actionLabel && (
+                <button onClick={item.action} style={viewAll}>{item.actionLabel}</button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ── Questionnaire CTA ────────────────────────────────────── */}
       <div style={{
         ...card,
@@ -256,7 +322,7 @@ export default function PortalDashboard({ booking, onNavigate }: Props) {
         <div>
           <p style={sectionTitle}>Wedding questionnaire</p>
           <p style={{ fontSize: '13px', color: '#888', marginTop: '4px', maxWidth: '380px', lineHeight: 1.5 }}>
-            Help {booking.photographer?.firstName ?? 'your photographer'} understand your vision, must-have shots, and all the details that make your day unique.
+            Help your photographer understand your vision, must-have shots, and all the details that make your day unique.
           </p>
         </div>
         <button
