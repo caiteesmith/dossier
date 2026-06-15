@@ -7,7 +7,7 @@ namespace Dossier.Api.Models;
 
 public enum LeadStatus    { New, Contacted, ProposalSent, Negotiating, Booked, Lost }
 public enum LeadSource    { Website, Instagram, ReferralVendor, ReferralClient, Google, WeddingWire, TheKnot, Other }
-public enum BookingStatus { Pending, Confirmed, Completed, Cancelled }
+public enum BookingStatus { Pending, Confirmed, Booked, Completed, Cancelled }
 public enum TaskCategory  { Admin, Client, DayOf, PostWedding, Manual }
 
 // ── Photographer ─────────────────────────────────────────────────
@@ -15,7 +15,8 @@ public enum TaskCategory  { Admin, Client, DayOf, PostWedding, Manual }
 public class Photographer
 {
     [Key, Column("id")]              public Guid    Id           { get; set; }
-    [Column("full_name")]            public string  FullName     { get; set; } = "";
+    [Column("first_name")]            public string  FirstName     { get; set; } = "";
+    [Column("last_name")]            public string  LastName     { get; set; } = "";
     [Column("email")]                public string  Email        { get; set; } = "";
     [Column("business_name")]        public string? BusinessName { get; set; }
     [Column("phone")]                public string? Phone        { get; set; }
@@ -26,6 +27,8 @@ public class Photographer
     [Column("timezone")]             public string  Timezone     { get; set; } = "America/New_York";
     [Column("business_address")]     public string? BusinessAddress { get; set; }
     [Column("portal_signoff")]       public string? PortalSignoff   { get; set; }
+    [Column("gallery_delivery_weeks")] public int GalleryDeliveryWeeks { get; set; } = 8;
+
     [Column("created_at")]           public DateTime CreatedAt   { get; set; }
     [Column("updated_at")]           public DateTime UpdatedAt   { get; set; }
 }
@@ -204,7 +207,7 @@ public class QuestionnaireResponse
 {
     [Key, Column("id")]              public Guid     Id              { get; set; }
     [Column("booking_id")]           public Guid     BookingId       { get; set; }
-    [Column("answers")]              public string   Answers         { get; set; } = "{}";
+    [Column("answers", TypeName = "jsonb")]  public string   Answers  { get; set; } = "{}";
     [Column("submitted_at")]         public DateTime? SubmittedAt    { get; set; }
     [Column("created_at")]           public DateTime CreatedAt       { get; set; }
     [Column("updated_at")]           public DateTime UpdatedAt       { get; set; }

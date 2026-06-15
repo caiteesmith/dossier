@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import { PageHeader, Card, Button } from '@/components/ui'
 import { useBookings, useBookingDetail } from '@/hooks/useData'
 import type { BookingDetail } from '@/types'
+import { api } from '@/lib/api'
 
 type ContractStatus = 'not_sent' | 'sent' | 'signed'
 
@@ -195,6 +196,11 @@ function ContractModal({ bookingId, onClose }: { bookingId: string; onClose: () 
   const retainer = d.packagePrice ? Math.round(d.packagePrice * 0.25) : 0
   const finalBalance = d.packagePrice ? d.packagePrice - retainer : 0
 
+  const [photographer, setPhotographer] = useState<Record<string, any> | null>(null)
+  useEffect(() => {
+    api.get('/api/photographer/me').then(r => setPhotographer(r.data)).catch(() => {})
+  }, [])
+
   const vars: Record<string, string> = {
     TODAY:              formatDate(new Date().toISOString().split('T')[0]),
     PARTNER_ONE:        d.partnerOneName,
@@ -213,10 +219,10 @@ function ContractModal({ bookingId, onClose }: { bookingId: string; onClose: () 
     RETAINER:           retainer ? money(retainer) : 'TBD',
     FINAL_BALANCE:      finalBalance ? money(finalBalance) : 'TBD',
     FINAL_DUE:          finalDueDate(d.weddingDate),
-    PHOTOGRAPHER:       'Caitee Smith',
-    BUSINESS:           'Caitee Smith Photography',
-    BUSINESS_ADDRESS:   '123 Main St, Wayne, NJ 07470',
-    BUSINESS_PHONE:     '(972) 555-0000',
+    PHOTOGRAPHER:       photographer ? `${photographer.firstName ?? ''} ${photographer.lastName ?? ''}`.trim() : '',
+    BUSINESS:           photographer?.businessName ?? '',
+    BUSINESS_ADDRESS:   photographer?.businessAddress ?? '',
+    BUSINESS_PHONE:     photographer?.phone ?? '',
   }
 
   function getFilledHTML(): string {
@@ -257,7 +263,7 @@ function ContractModal({ bookingId, onClose }: { bookingId: string; onClose: () 
             </div>
             <div>
               <div class="sig-line"></div>
-              <div class="sig-label">Caitee Smith · Caitee Smith Photography</div>
+              <div class="sig-label">${photographer ? `${photographer.firstName} ${photographer.lastName}`.trim() : 'Photographer'} · ${photographer?.businessName ?? ''}</div>
             </div>
           </div>
         </div>` : ''}

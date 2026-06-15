@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { usePortalBooking } from '@/hooks/useData'
+import PortalDashboard from './PortalDashboard'
 import PortalQuestionnaire from './PortalQuestionnaire'
 import PortalTimeline from './PortalTimeline'
 import PortalVendors from './PortalVendors'
@@ -9,23 +10,25 @@ import PortalDocuments from './PortalDocuments'
 import PortalResources from './PortalResources'
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   })
 }
 
 function daysUntil(dateStr: string) {
-  const diff = new Date(dateStr).getTime() - new Date().getTime()
-  return Math.ceil(diff / (1000 * 60 * 60 * 24))
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return Math.ceil((new Date(year, month - 1, day).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 }
 
-type PortalTab = 'questionnaire' | 'checklist' | 'timeline' | 'vendors' | 'documents' | 'resources'
+type PortalTab = 'dashboard' | 'questionnaire' | 'checklist' | 'timeline' | 'vendors' | 'documents' | 'resources'
 
 const TABS: { id: PortalTab; label: string }[] = [
+  { id: 'dashboard',     label: 'Overview' },
   { id: 'questionnaire', label: 'Questionnaire' },
   { id: 'checklist',     label: 'Checklist' },
   { id: 'timeline',      label: 'Timeline' },
-  { id: 'vendors',       label: 'Contacts' },
+  { id: 'vendors',       label: 'Vendors' },
   { id: 'documents',     label: 'Documents' },
   { id: 'resources',     label: 'Resources' },
 ]
@@ -33,7 +36,7 @@ const TABS: { id: PortalTab; label: string }[] = [
 export default function PortalPage() {
   const { token } = useParams<{ token: string }>()
   const { data: booking, isLoading } = usePortalBooking(token ?? '')
-  const [activeTab, setActiveTab] = useState<PortalTab>('questionnaire')
+  const [activeTab, setActiveTab] = useState<PortalTab>('dashboard')
 
   if (isLoading) {
     return (
@@ -71,11 +74,11 @@ export default function PortalPage() {
               CS
             </div>
             <div>
-              <p style={{ fontSize: '13px', fontWeight: 500, color: 'white', lineHeight: 1 }}>Caitee Smith Photography</p>
+              <p style={{ fontSize: '13px', fontWeight: 500, color: 'white', lineHeight: 1 }}>{booking.photographer?.businessName ?? booking.photographer?.fullName ?? 'Caitee Smith Photography'}</p>
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Wedding Photography Studio</p>
             </div>
           </div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>Your wedding portal</div>
+          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)' }}>{booking.partnerOneName} & {booking.partnerTwoName}'s wedding portal</div>
         </div>
 
         {/* Hero */}
@@ -149,7 +152,8 @@ export default function PortalPage() {
 
       {/* ── Content ─────────────────────────────────────────────── */}
       <main style={{ maxWidth: '760px', margin: '0 auto', padding: '40px 24px 80px' }}>
-        {activeTab === 'questionnaire' && <PortalQuestionnaire booking={booking} />}
+        {activeTab === 'dashboard'     && <PortalDashboard booking={booking} onNavigate={(tab) => setActiveTab(tab as PortalTab)} />}
+        {activeTab === 'questionnaire' && <PortalQuestionnaire booking={booking} token={token ?? ''} />}
         {activeTab === 'checklist'     && <PortalTodo booking={booking} />}
         {activeTab === 'timeline'      && <PortalTimeline booking={booking} />}
         {activeTab === 'vendors'       && <PortalVendors booking={booking} />}
@@ -159,10 +163,12 @@ export default function PortalPage() {
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <footer style={{ borderTop: '1px solid #e0ddd8', padding: '18px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-        <p style={{ fontSize: '12px', color: '#aaa' }}>Caitee Smith Photography · Your wedding portal</p>
+        <p style={{ fontSize: '12px', color: '#aaa' }}>{booking.photographer?.businessName ?? booking.photographer?.fullName} · {booking.partnerOneName} & {booking.partnerTwoName}'s wedding portal</p>
         <p style={{ fontSize: '12px', color: '#aaa' }}>
           Questions?{' '}
-          <a href="mailto:hello@caiteesmith.com" style={{ color: '#5483a8', textDecoration: 'none' }}>hello@caiteesmith.com</a>
+          {booking.photographer?.email && (
+            <a href={`mailto:${booking.photographer.email}`} style={{ color: '#5483a8', textDecoration: 'none' }}>{booking.photographer.email}</a>
+          )}
         </p>
       </footer>
     </div>

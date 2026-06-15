@@ -9,9 +9,17 @@ interface DocStatus {
   icon: string
 }
 
+function addDays(dateStr: string, days: number) {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  date.setDate(date.getDate() + days)
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
 export default function PortalDocuments({ booking }: Props) {
-  // Derive status from booking data
-  // TODO: replace with real contract/invoice status from API
+  const galleryWeeks = booking.photographer?.galleryDeliveryWeeks ?? 8
+  const galleryDate = booking.weddingDate ? addDays(booking.weddingDate, galleryWeeks * 7) : null
+
   const docs: DocStatus[] = [
     {
       icon: '📄',
@@ -30,21 +38,23 @@ export default function PortalDocuments({ booking }: Props) {
       label: 'Final payment',
       status: 'not_started',
       detail: booking.weddingDate
-        ? `Due 30 days before — ${new Date(new Date(booking.weddingDate).getTime() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+        ? `Due 30 days before — ${addDays(booking.weddingDate, -30)}`
         : 'Due 30 days before the wedding',
     },
     {
       icon: '🖼️',
       label: 'Gallery delivery',
       status: 'not_started',
-      detail: '6–8 weeks after your wedding date',
+      detail: galleryDate
+        ? `By ${galleryDate} (${galleryWeeks} weeks after your wedding)`
+        : `${galleryWeeks} weeks after your wedding date`,
     },
   ]
 
   const statusConfig = {
-    complete:    { label: 'Complete',     color: '#276840', bg: '#e6f4ec', dot: '#276840' },
-    pending:     { label: 'In progress',  color: '#7a5c0a', bg: '#fdf8e8', dot: '#d4a832' },
-    not_started: { label: 'Upcoming',     color: '#888',    bg: '#f5f5f5', dot: '#ccc'    },
+    complete:    { label: 'Complete',    color: '#276840', bg: '#e6f4ec', dot: '#276840' },
+    pending:     { label: 'In progress', color: '#7a5c0a', bg: '#fdf8e8', dot: '#d4a832' },
+    not_started: { label: 'Upcoming',    color: '#888',    bg: '#f5f5f5', dot: '#ccc'    },
   }
 
   return (
@@ -62,35 +72,13 @@ export default function PortalDocuments({ booking }: Props) {
         {docs.map((doc, i) => {
           const cfg = statusConfig[doc.status]
           return (
-            <div
-              key={i}
-              style={{
-                background: 'white',
-                borderRadius: '12px',
-                border: '1px solid #e8e4de',
-                padding: '18px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-              }}
-            >
+            <div key={i} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e8e4de', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
               <span style={{ fontSize: '22px', flexShrink: 0 }}>{doc.icon}</span>
               <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '14px', fontWeight: 500, color: '#1a1a2e', marginBottom: '2px' }}>{doc.label}</p>
                 {doc.detail && <p style={{ fontSize: '12px', color: '#999' }}>{doc.detail}</p>}
               </div>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                padding: '4px 10px',
-                borderRadius: '20px',
-                background: cfg.bg,
-                color: cfg.color,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-              }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', background: cfg.bg, color: cfg.color, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.dot, flexShrink: 0, display: 'inline-block' }} />
                 {cfg.label}
               </span>
@@ -115,9 +103,7 @@ export default function PortalDocuments({ booking }: Props) {
           </div>
           {booking.packagePrice && (
             <div style={{ textAlign: 'right' }}>
-              <p style={{ fontSize: '22px', fontWeight: 600, color: '#f5c842' }}>
-                ${booking.packagePrice.toLocaleString()}
-              </p>
+              <p style={{ fontSize: '22px', fontWeight: 600, color: '#f5c842' }}>${booking.packagePrice.toLocaleString()}</p>
               <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Total investment</p>
             </div>
           )}

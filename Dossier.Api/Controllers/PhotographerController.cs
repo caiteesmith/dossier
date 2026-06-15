@@ -10,8 +10,6 @@ namespace Dossier.Api.Controllers;
 [ApiController, Route("api/photographer"), Authorize]
 public class PhotographerController(DossierDbContext db) : ControllerBase
 {
-    // GET api/photographer/me
-    // Returns the photographer record for the current JWT, creating it if first login
     [HttpGet("me")]
     public async Task<IActionResult> GetMe()
     {
@@ -21,11 +19,11 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
         var photographer = await db.Photographers.FindAsync(pid);
         if (photographer is null)
         {
-            // First login — auto-provision the photographer record
             photographer = new Photographer
             {
                 Id        = pid,
-                FullName  = email?.Split('@')[0] ?? "Photographer",
+                FirstName = email?.Split('@')[0] ?? "Photographer",
+                LastName  = "",
                 Email     = email ?? "",
                 Timezone  = "America/New_York",
                 CreatedAt = DateTime.UtcNow,
@@ -38,7 +36,6 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
         return Ok(photographer);
     }
 
-    // PATCH api/photographer/me
     [HttpPatch("me")]
     public async Task<IActionResult> UpdateMe([FromBody] UpdatePhotographerRequest req)
     {
@@ -46,7 +43,8 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
         var photographer = await db.Photographers.FindAsync(pid);
         if (photographer is null) return NotFound();
 
-        if (req.FullName        is not null) photographer.FullName        = req.FullName;
+        if (req.FirstName       is not null) photographer.FirstName       = req.FirstName;
+        if (req.LastName        is not null) photographer.LastName        = req.LastName;
         if (req.BusinessName    is not null) photographer.BusinessName    = req.BusinessName;
         if (req.Phone           is not null) photographer.Phone           = req.Phone;
         if (req.Website         is not null) photographer.Website         = req.Website;
@@ -55,14 +53,14 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
         if (req.Timezone        is not null) photographer.Timezone        = req.Timezone;
         if (req.BusinessAddress is not null) photographer.BusinessAddress = req.BusinessAddress;
         if (req.LogoUrl         is not null) photographer.LogoUrl         = req.LogoUrl;
-        if (req.PortalSignoff   is not null) photographer.PortalSignoff   = req.PortalSignoff;
+        if (req.PortalSignoff         is not null) photographer.PortalSignoff         = req.PortalSignoff;
+        if (req.GalleryDeliveryWeeks  is not null) photographer.GalleryDeliveryWeeks  = req.GalleryDeliveryWeeks.Value;
 
         photographer.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
         return Ok(photographer);
     }
 
-    // GET api/photographer/packages
     [HttpGet("packages")]
     public async Task<IActionResult> GetPackages()
     {
@@ -74,7 +72,6 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
         return Ok(packages);
     }
 
-    // POST api/photographer/packages
     [HttpPost("packages")]
     public async Task<IActionResult> CreatePackage([FromBody] CreatePackageRequest req)
     {
@@ -97,7 +94,6 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
         return Ok(pkg);
     }
 
-    // PATCH api/photographer/packages/{id}
     [HttpPatch("packages/{id:guid}")]
     public async Task<IActionResult> UpdatePackage(Guid id, [FromBody] UpdatePackageRequest req)
     {
@@ -120,7 +116,8 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
 }
 
 public record UpdatePhotographerRequest(
-    string? FullName        = null,
+    string? FirstName       = null,
+    string? LastName        = null,
     string? BusinessName    = null,
     string? Phone           = null,
     string? Website         = null,
@@ -129,7 +126,8 @@ public record UpdatePhotographerRequest(
     string? Timezone        = null,
     string? BusinessAddress = null,
     string? LogoUrl         = null,
-    string? PortalSignoff   = null
+    string? PortalSignoff         = null,
+    int?    GalleryDeliveryWeeks  = null
 );
 
 public record CreatePackageRequest(

@@ -3,7 +3,7 @@ import type { BookingDetail } from '@/types'
 interface Props { booking: BookingDetail }
 
 export default function PortalVendors({ booking }: Props) {
-  const { vendors } = booking
+  const { vendors, photographer } = booking
 
   if (vendors.length === 0) {
     return (
@@ -34,37 +34,25 @@ export default function PortalVendors({ booking }: Props) {
           <div
             key={vendor.id}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '16px 20px',
-              borderTop: i === 0 ? 'none' : '1px solid #f0ede8',
-              gap: '16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '16px 20px', borderTop: i === 0 ? 'none' : '1px solid #f0ede8', gap: '16px',
             }}
           >
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#aaa', width: '90px', flexShrink: 0 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#aaa', marginBottom: '2px' }}>
                 {vendor.role}
-              </span>
-              <div>
-                <p style={{ fontSize: '14px', fontWeight: 500, color: '#1a1a2e' }}>{vendor.name}</p>
-                {vendor.notes && <p style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>{vendor.notes}</p>}
-              </div>
+              </p>
+              <p style={{ fontSize: '14px', fontWeight: 500, color: '#1a1a2e' }}>{vendor.name}</p>
+              {vendor.notes && <p style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>{vendor.notes}</p>}
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
               {vendor.phone && (
-                <a
-                  href={`tel:${vendor.phone}`}
-                  style={{ fontSize: '13px', color: '#5483a8', textDecoration: 'none', fontWeight: 500 }}
-                >
+                <a href={`tel:${vendor.phone}`} style={{ fontSize: '13px', color: '#5483a8', textDecoration: 'none', fontWeight: 500 }}>
                   📞 {vendor.phone}
                 </a>
               )}
               {vendor.email && (
-                <a
-                  href={`mailto:${vendor.email}`}
-                  style={{ fontSize: '12px', color: '#5483a8', textDecoration: 'none' }}
-                >
+                <a href={`mailto:${vendor.email}`} style={{ fontSize: '12px', color: '#5483a8', textDecoration: 'none' }}>
                   {vendor.email}
                 </a>
               )}
@@ -73,16 +61,26 @@ export default function PortalVendors({ booking }: Props) {
         ))}
       </div>
 
-      {/* Photographer always at the bottom */}
+      {/* Photographer card */}
       <div style={{ marginTop: '16px', background: '#0d1525', borderRadius: '12px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>Lead photographer</p>
-          <p style={{ fontSize: '15px', fontWeight: 500, color: 'white' }}>Caitee Smith</p>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>Caitee Smith Photography</p>
+          <p style={{ fontSize: '15px', fontWeight: 500, color: 'white' }}>{photographer?.fullName ?? 'Your Photographer'}</p>
+          {photographer?.businessName && (
+            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>{photographer.businessName}</p>
+          )}
         </div>
         <div style={{ textAlign: 'right' }}>
-          <a href="tel:+19725550000" style={{ display: 'block', fontSize: '14px', color: '#f5c842', textDecoration: 'none', fontWeight: 500 }}>📞 (972) 555-0000</a>
-          <a href="mailto:hello@caiteesmith.com" style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', marginTop: '4px' }}>hello@caiteesmith.com</a>
+          {photographer?.phone && (
+            <a href={`tel:${photographer.phone}`} style={{ display: 'block', fontSize: '14px', color: '#f5c842', textDecoration: 'none', fontWeight: 500 }}>
+              📞 {photographer.phone}
+            </a>
+          )}
+          {photographer?.email && (
+            <a href={`mailto:${photographer.email}`} style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', marginTop: '4px' }}>
+              {photographer.email}
+            </a>
+          )}
         </div>
       </div>
     </div>

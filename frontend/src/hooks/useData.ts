@@ -4,33 +4,18 @@ import type { Lead, Booking, BookingDetail, TaskCategory } from '@/types'
 
 // ── Leads ─────────────────────────────────────────────────────────
 
-function toSnakeCase(str: string) {
-  return str.replace(/([A-Z])/g, (m, _, i) => (i === 0 ? m.toLowerCase() : '_' + m.toLowerCase()))
-}
-
 export function useLeads() {
   return useQuery<Lead[]>({
     queryKey: ['leads'],
-    queryFn: () => api.get('/api/leads').then(r =>
-      r.data.map((l: any) => ({
-        ...l,
-        status: toSnakeCase(l.status ?? 'new'),
-        source: l.source ? toSnakeCase(l.source) : null,
-      }))
-    ),
+    queryFn: () => api.get('/api/leads').then(r => r.data),
   })
 }
 
 export function useUpdateLeadStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: Lead['status'] }) => {
-      const apiStatus = status
-        .split('_')
-        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-        .join('')
-      return api.patch(`/api/leads/${id}`, { status: apiStatus })
-    },
+    mutationFn: ({ id, status }: { id: string; status: Lead['status'] }) =>
+      api.patch(`/api/leads/${id}`, { status }),
     onMutate: async ({ id, status }) => {
       await qc.cancelQueries({ queryKey: ['leads'] })
       const prev = qc.getQueryData<Lead[]>(['leads'])
@@ -142,6 +127,50 @@ export function useAddTask() {
   })
 }
 
+export function useUpdateTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, taskId, ...data }: {
+      bookingId: string; taskId: string
+      title?: string; category?: string; dueDate?: string | null
+    }) => api.patch(`/api/bookings/${bookingId}/tasks/${taskId}`, data).then(r => r.data),
+    onMutate: async ({ bookingId, taskId, ...data }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
+        if (!old) return old
+        return { ...old, tasks: old.tasks.map(t => t.id === taskId ? { ...t, ...data } : t) }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
+  })
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, taskId }: { bookingId: string; taskId: string }) =>
+      api.delete(`/api/bookings/${bookingId}/tasks/${taskId}`),
+    onMutate: async ({ bookingId, taskId }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
+        if (!old) return old
+        return { ...old, tasks: old.tasks.filter(t => t.id !== taskId) }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
+  })
+}
+
 // ── Vendors ───────────────────────────────────────────────────────
 
 export function useAddVendor() {
@@ -150,6 +179,50 @@ export function useAddVendor() {
     mutationFn: ({ bookingId, ...data }: { bookingId: string; role: string; name: string; phone?: string; email?: string; notes?: string }) =>
       api.post(`/api/bookings/${bookingId}/vendors`, data).then(r => r.data),
     onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['bookings', vars.bookingId] }),
+  })
+}
+
+export function useUpdateVendor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, vendorId, ...data }: {
+      bookingId: string; vendorId: string
+      role?: string; name?: string; phone?: string; email?: string; notes?: string
+    }) => api.patch(`/api/bookings/${bookingId}/vendors/${vendorId}`, data).then(r => r.data),
+    onMutate: async ({ bookingId, vendorId, ...data }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
+        if (!old) return old
+        return { ...old, vendors: old.vendors.map((v: any) => v.id === vendorId ? { ...v, ...data } : v) }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
+  })
+}
+
+export function useDeleteVendor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, vendorId }: { bookingId: string; vendorId: string }) =>
+      api.delete(`/api/bookings/${bookingId}/vendors/${vendorId}`),
+    onMutate: async ({ bookingId, vendorId }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
+        if (!old) return old
+        return { ...old, vendors: old.vendors.filter((v: any) => v.id !== vendorId) }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
   })
 }
 
@@ -164,13 +237,114 @@ export function useAddShotGroup() {
   })
 }
 
+export function useDeleteShotGroup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, groupId }: { bookingId: string; groupId: string }) =>
+      api.delete(`/api/bookings/${bookingId}/shot-list/groups/${groupId}`),
+    onMutate: async ({ bookingId, groupId }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
+        if (!old) return old
+        return { ...old, shotListGroups: old.shotListGroups.filter((g: any) => g.id !== groupId) }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
+  })
+}
+
+export function useDeleteShotItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, groupId, itemId }: { bookingId: string; groupId: string; itemId: string }) =>
+      api.delete(`/api/bookings/${bookingId}/shot-list/groups/${groupId}/items/${itemId}`),
+    onMutate: async ({ bookingId, groupId, itemId }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
+        if (!old) return old
+        return {
+          ...old,
+          shotListGroups: old.shotListGroups.map((g: any) =>
+            g.id === groupId ? { ...g, items: g.items.filter((i: any) => i.id !== itemId) } : g
+          ),
+        }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
+  })
+}
+
+// ── Timeline blocks ───────────────────────────────────────────────
+
+export function useAddTimelineBlock() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, ...data }: {
+      bookingId: string
+      title: string
+      startTime: string
+      durationMinutes: number
+      location?: string
+      notes?: string
+    }) => api.post(`/api/bookings/${bookingId}/timeline/blocks`, data).then(r => r.data),
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['bookings', vars.bookingId] }),
+  })
+}
+
+export function useUpdateTimelineBlock() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, blockId, ...data }: {
+      bookingId: string
+      blockId: string
+      title?: string
+      startTime?: string
+      durationMinutes?: number
+      location?: string
+      notes?: string
+      sortOrder?: number
+    }) => api.patch(`/api/bookings/${bookingId}/timeline/blocks/${blockId}`, data).then(r => r.data),
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['bookings', vars.bookingId] }),
+  })
+}
+
+export function useDeleteTimelineBlock() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, blockId }: { bookingId: string; blockId: string }) =>
+      api.delete(`/api/bookings/${bookingId}/timeline/blocks/${blockId}`),
+    onMutate: async ({ bookingId, blockId }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: any) => {
+        if (!old?.timeline) return old
+        return { ...old, timeline: { ...old.timeline, blocks: old.timeline.blocks.filter((b: any) => b.id !== blockId) } }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
+  })
+}
+
 // ── Portal (token-based, no JWT) ──────────────────────────────────
 
 export function usePortalBooking(token: string) {
   return useQuery<BookingDetail>({
     queryKey: ['portal', token],
     queryFn: () => api.get(`/api/portal/${token}`, {
-      // Portal requests don't need a JWT — remove the auth header
       headers: { Authorization: undefined },
       transformRequest: [(data, headers) => {
         delete headers.Authorization
@@ -180,6 +354,8 @@ export function usePortalBooking(token: string) {
     enabled: !!token,
   })
 }
+
+// ── Misc ──────────────────────────────────────────────────────────
 
 export function useDeleteBooking() {
   const qc = useQueryClient()
@@ -208,7 +384,6 @@ export function useUpdateWorkflowStatus() {
       queryClient.setQueryData(['bookings', id], (old: any) =>
         old ? { ...old, workflowStatus } : old
       )
-      // also update the list
       queryClient.setQueryData(['bookings'], (old: any[]) =>
         Array.isArray(old)
           ? old.map(b => b.id === id ? { ...b, workflowStatus } : b)
@@ -223,5 +398,13 @@ export function useUpdateWorkflowStatus() {
       queryClient.invalidateQueries({ queryKey: ['bookings', id] })
       queryClient.invalidateQueries({ queryKey: ['bookings'] })
     },
+  })
+}
+
+export function useQuestionnaire(bookingId: string) {
+  return useQuery<{ answers: Record<string, any>; submittedAt: string | null }>({
+    queryKey: ['questionnaire', bookingId],
+    queryFn: () => api.get(`/api/bookings/${bookingId}/questionnaire`).then(r => r.data),
+    enabled: !!bookingId,
   })
 }

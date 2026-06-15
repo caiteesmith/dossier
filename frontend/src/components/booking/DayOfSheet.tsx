@@ -1,10 +1,8 @@
 import React, { useRef } from 'react'
 import type { BookingDetail } from '@/types'
-import type { QuestionnaireAnswers } from '@/types/questionnaire'
 
 interface DayOfSheetProps {
   booking: BookingDetail
-  answers?: QuestionnaireAnswers
   onClose: () => void
 }
 
@@ -27,15 +25,7 @@ function formatDate(dateStr: string) {
   })
 }
 
-function a(answers: QuestionnaireAnswers | undefined, key: string): string {
-  if (!answers) return ''
-  const val = answers[key]
-  if (!val) return ''
-  if (Array.isArray(val)) return val.join(', ')
-  return String(val)
-}
-
-export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
+export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
   const printRef = useRef<HTMLDivElement>(null)
 
   const handlePrint = () => {
@@ -53,44 +43,15 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
     win.document.close()
   }
 
-  const vendors: VendorEntry[] = [
-    ...booking.vendors.map(v => ({ role: v.role, name: v.name, phone: v.phone, email: v.email })),
-    ...(answers ? [
-      { role: 'Planner',      name: a(answers, 'vendor_planner') },
-      { role: 'Officiant',    name: a(answers, 'vendor_officiant') },
-      { role: 'Videographer', name: a(answers, 'vendor_videographer') },
-      { role: 'Florist',      name: a(answers, 'vendor_florist') },
-      { role: 'Hair',         name: a(answers, 'vendor_hair') },
-      { role: 'Makeup',       name: a(answers, 'vendor_makeup') },
-      { role: 'DJ/Band',      name: a(answers, 'vendor_dj_band') },
-    ].filter(v => v.name) : []),
-  ]
+  const vendors: VendorEntry[] = booking.vendors.map(v => ({
+    role: v.role, name: v.name, phone: v.phone, email: v.email,
+  }))
 
-  const timelineRows: TimelineRow[] = answers ? ([
-    { label: 'Hair & Makeup',           time: a(answers, 'tl_hair_makeup'),             section: 'Getting Ready' },
-    { label: 'Photographer Arrival',    time: a(answers, 'tl_photographer_arrival') },
-    { label: 'Details & Flat Lays',     time: a(answers, 'tl_details_flatlays') },
-    { label: 'Bride Getting Dressed',   time: a(answers, 'tl_bride_getting_dressed') },
-    { label: 'Groom Getting Dressed',   time: a(answers, 'tl_groom_getting_dressed') },
-    { label: 'Bridal Portraits',        time: a(answers, 'tl_bridal_portraits') },
-    { label: 'First Look',              time: a(answers, 'tl_first_look'),              section: 'First Look & Portraits' },
-    { label: 'Bride & Groom Portraits', time: a(answers, 'tl_bride_groom_portraits') },
-    { label: 'Wedding Party Portraits', time: a(answers, 'tl_wedding_party_portraits') },
-    { label: 'Family Portraits',        time: a(answers, 'tl_family_portraits') },
-    { label: 'Leaving for Ceremony',    time: a(answers, 'tl_leaving_for_ceremony'),    section: 'Ceremony' },
-    { label: 'Ceremony',                time: a(answers, 'tl_ceremony_start') },
-    { label: 'Cocktail Hour',           time: a(answers, 'tl_cocktail_hour'),           section: 'Reception' },
-    { label: 'Reception',               time: a(answers, 'tl_reception_start') },
-    { label: 'Introductions',           time: a(answers, 'tl_introductions') },
-    { label: 'First Dance',             time: a(answers, 'tl_first_dance') },
-    { label: 'Parent Dances',           time: a(answers, 'tl_parent_dances') },
-    { label: 'Toasts',                  time: a(answers, 'tl_toasts') },
-    { label: 'Dinner',                  time: a(answers, 'tl_dinner') },
-    { label: 'Sunset Photos ✨',         time: a(answers, 'tl_sunset_photos') },
-    { label: 'Cake Cutting',            time: a(answers, 'tl_cake_cutting') },
-    { label: 'Dance Floor Opens',       time: a(answers, 'tl_dance_floor') },
-    { label: 'Photographer Departure',  time: a(answers, 'tl_photographer_departure') },
-  ] as TimelineRow[]).filter(r => r.time) : (booking.timeline?.blocks.map(b => ({ label: b.title, time: b.startTime })) ?? [])
+  const timelineRows: TimelineRow[] = booking.timeline?.blocks.map(b => ({
+    label: b.title,
+    time: b.startTime,
+    notes: [b.location, b.notes].filter(Boolean).join(' · ') || undefined,
+  })) ?? []
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: 'rgba(13,21,37,0.85)' }}>
@@ -147,23 +108,19 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               {/* Day-of details */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Day-Of Details</div>
-                {[
-                  ['Lead Photographer', 'Caitee Smith'],
-                  ['Second Photographer', a(answers, 'vendor_second_photographer') || '—'],
-                  ['Hours of Coverage', a(answers, 'hours_of_coverage') || (booking.hoursCovered ? booking.hoursCovered + ' hours' : '—')],
-                  ['Guest Count', a(answers, 'guest_count') || '—'],
-                  ['Dress Code', a(answers, 'dress_code') || '—'],
-                  ['Coordinator', a(answers, 'has_coordinator') || '—'],
-                ].map(([label, value]) => (
+                {([
+                  ['Package', booking.packageName ?? '—'],
+                  ['Hours of Coverage', booking.hoursCovered ? booking.hoursCovered + 'h' : '—'],
+                ] as [string, string][]).map(([label, value]) => (
                   <div key={label} style={{ marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>
                     <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{label}: </span>
                     <span style={{ color: '#444' }}>{value}</span>
                   </div>
                 ))}
-                {a(answers, 'important_photos') && (
+                {booking.notes && (
                   <div style={{ marginTop: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
-                    <span style={{ fontWeight: 600, color: '#1a1a2e' }}>Most Important Photos: </span>
-                    <span style={{ color: '#444' }}>{a(answers, 'important_photos')}</span>
+                    <span style={{ fontWeight: 600, color: '#1a1a2e' }}>Notes: </span>
+                    <span style={{ color: '#444' }}>{booking.notes}</span>
                   </div>
                 )}
               </div>
@@ -173,13 +130,7 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Location Details</div>
                 {([
                   ['Venue', booking.venueName],
-                  ['Bridal Prep', a(answers, 'bridal_prep_address')],
-                  ['Groom Prep', a(answers, 'groom_prep_address')],
-                  ['First Look', a(answers, 'first_look_location')],
-                  ['Ceremony', a(answers, 'ceremony_address') || booking.venueAddress],
-                  ['Cocktail Hour', a(answers, 'cocktail_location')],
-                  ['Reception', a(answers, 'reception_address')],
-                  ['Sunset Photos', a(answers, 'sunset_location')],
+                  ['Address', booking.venueAddress],
                 ] as [string, string | undefined][]).filter(([, v]) => v).map(([label, value]) => (
                   <div key={label} style={{ marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>
                     <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{label}: </span>
@@ -191,13 +142,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
               {/* Contact info */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Contact Info</div>
-                {a(answers, 'alternate_contact_bride') && (
-                  <div style={{ marginBottom: '10px', fontFamily: 'sans-serif', fontSize: '11px' }}>
-                    <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '3px' }}>Alternate Contacts</div>
-                    <div style={{ color: '#444', whiteSpace: 'pre-line' }}>{a(answers, 'alternate_contact_bride')}</div>
-                    {a(answers, 'alternate_contact_groom') && <div style={{ color: '#444', whiteSpace: 'pre-line', marginTop: '4px' }}>{a(answers, 'alternate_contact_groom')}</div>}
-                  </div>
-                )}
                 <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>Photographers</div>
                 {booking.vendors.filter(v => ['Photographer', 'Second shooter', 'Second Shooter'].includes(v.role)).map(v => (
                   <div key={v.id} style={{ marginBottom: '4px', fontFamily: 'sans-serif', fontSize: '11px', color: '#444' }}>
@@ -267,31 +211,13 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
                   Family Shot List
                 </div>
-                {a(answers, 'family_shots') ? (
-                  <div style={{ fontFamily: 'sans-serif', fontSize: '11px', color: '#444', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
-                    {a(answers, 'family_shots')}
-                  </div>
-                ) : booking.shotListGroups.filter(g => g.name.toLowerCase().includes('family')).flatMap(g => g.items).map((item, i) => (
+                {booking.shotListGroups.filter(g => g.name.toLowerCase().includes('family')).flatMap(g => g.items).map((item, i) => (
                   <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '5px', fontFamily: 'sans-serif', fontSize: '11px', alignItems: 'flex-start' }}>
                     <div style={{ width: '11px', height: '11px', border: '1px solid #ccc', borderRadius: '2px', flexShrink: 0, marginTop: '1px' }} />
                     <span style={{ color: '#333' }}>{item.description}</span>
                   </div>
                 ))}
-                {a(answers, 'divorced_parents') && (
-                  <div style={{ marginTop: '10px', padding: '8px', background: '#fdf8e8', borderRadius: '4px', fontFamily: 'sans-serif', fontSize: '10px', color: '#7a5c0a' }}>
-                    <strong>Note:</strong> {a(answers, 'divorced_parents')}
-                  </div>
-                )}
-                {a(answers, 'must_have_shots') && (
-                  <>
-                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
-                      Must-Have Shots
-                    </div>
-                    <div style={{ fontFamily: 'sans-serif', fontSize: '11px', color: '#444', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
-                      {a(answers, 'must_have_shots')}
-                    </div>
-                  </>
-                )}
+
               </div>
 
               <div>
@@ -342,24 +268,6 @@ export function DayOfSheet({ booking, answers, onClose }: DayOfSheetProps) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-              {a(answers, 'expectations') && (
-                <div>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '8px' }}>Expectations</div>
-                  <div style={{ fontFamily: 'sans-serif', fontSize: '11px', color: '#444', lineHeight: '1.7' }}>{a(answers, 'expectations')}</div>
-                </div>
-              )}
-              {a(answers, 'surprises') && (
-                <div>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '8px' }}>Surprises & Special Moments</div>
-                  <div style={{ fontFamily: 'sans-serif', fontSize: '11px', color: '#444', lineHeight: '1.7' }}>{a(answers, 'surprises')}</div>
-                </div>
-              )}
-              {a(answers, 'ceremony_restrictions') && a(answers, 'ceremony_restrictions') !== 'None' && (
-                <div>
-                  <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '8px' }}>Restrictions</div>
-                  <div style={{ fontFamily: 'sans-serif', fontSize: '11px', color: '#444', lineHeight: '1.7' }}>{a(answers, 'ceremony_restrictions')}</div>
-                </div>
-              )}
               {booking.notes && (
                 <div>
                   <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '8px' }}>General Notes</div>

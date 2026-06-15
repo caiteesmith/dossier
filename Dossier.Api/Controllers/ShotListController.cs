@@ -110,6 +110,40 @@ public class ShotListController(DossierDbContext db) : ControllerBase
         return Ok(item);
     }
 
+       // DELETE api/bookings/{bookingId}/shot-list/groups/{groupId}
+    [HttpDelete("groups/{groupId:guid}")]
+    public async Task<IActionResult> DeleteGroup(Guid bookingId, Guid groupId)
+    {
+        var pid = User.GetPhotographerId();
+        if (!await BookingOwnedBy(bookingId, pid)) return NotFound();
+ 
+        var group = await db.ShotListGroups
+            .Include(g => g.Items)
+            .FirstOrDefaultAsync(g => g.Id == groupId);
+        if (group is null) return NotFound();
+ 
+        db.ShotListItems.RemoveRange(group.Items);
+        db.ShotListGroups.Remove(group);
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+ 
+    // DELETE api/bookings/{bookingId}/shot-list/groups/{groupId}/items/{itemId}
+    [HttpDelete("groups/{groupId:guid}/items/{itemId:guid}")]
+    public async Task<IActionResult> DeleteItem(Guid bookingId, Guid groupId, Guid itemId)
+    {
+        var pid = User.GetPhotographerId();
+        if (!await BookingOwnedBy(bookingId, pid)) return NotFound();
+ 
+        var item = await db.ShotListItems.FirstOrDefaultAsync(i => i.Id == itemId && i.GroupId == groupId);
+        if (item is null) return NotFound();
+ 
+        db.ShotListItems.Remove(item);
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
+
+
     private async Task<bool> BookingOwnedBy(Guid bookingId, Guid pid) =>
         await db.Bookings.AnyAsync(b => b.Id == bookingId && b.PhotographerId == pid);
 }

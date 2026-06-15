@@ -183,7 +183,7 @@ export function WeatherWidget({ booking, compact = false }: WeatherWidgetProps) 
       }}>
         {[
           { label: 'UV Index', value: String(weather.uvIndex) },
-          { label: 'Precipitation', value: weather.precipitation > 0 ? `${weather.precipitation}mm` : 'None' },
+          { label: 'Precipitation', value: weather.precipitation > 0 ? `${(weather.precipitation / 25.4).toFixed(2)}"` : 'None' },
         ].map(item => (
           <div key={item.label}>
             <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-navy-400)' }}>{item.label}</p>

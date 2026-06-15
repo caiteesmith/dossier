@@ -161,4 +161,15 @@ export interface BookingDetail extends Booking {
   timeline?: Timeline
   vendors: Vendor[]
   shotListGroups: ShotListGroup[]
+  photographer?: {
+    firstName: string
+    lastName: string
+    fullName: string
+    businessName?: string
+    email: string
+    phone?: string
+    website?: string
+    instagram?: string
+    galleryDeliveryWeeks?: number
+  }
 }

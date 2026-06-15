@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Button, PageHeader } from '@/components/ui'
 import AppShell from '@/components/layout/AppShell'
 import { WEDDING_QUESTIONNAIRE } from '@/data/questionnaire'
 import type { QuestionnaireSection } from '@/types/questionnaire'
 import DocumentsTab from './DocumentsTab'
+import { api } from '@/lib/api'
 
 type AccountTab = 'profile' | 'branding' | 'questionnaire' | 'documents'
 
@@ -61,32 +62,85 @@ function Field({ label, value, onChange, placeholder, type = 'text', hint }: {
   )
 }
 
+// ── Shared photographer data hook ─────────────────────────────────
+
+function usePhotographer() {
+  const [data, setData] = useState<Record<string, any> | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/api/photographer/me')
+      .then(r => setData(r.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function save(patch: Record<string, any>) {
+    const r = await api.patch('/api/photographer/me', patch)
+    setData(r.data)
+    return r.data
+  }
+
+  return { data, loading, save }
+}
+
 // ── Profile tab ───────────────────────────────────────────────────
 
 function ProfileTab() {
+  const { data, loading, save } = usePhotographer()
   const [form, setForm] = useState({
-    fullName:     'Caitee Smith',
-    email:        'hello@caiteesmith.com',
-    businessName: 'Caitee Smith Photography',
-    website:      'caiteesmith.com',
+    firstName:    '',
+    lastName:     '',
+    businessName: '',
+    website:      '',
     timezone:     'America/New_York',
-    logoUrl:      '',
-    nickname:     localStorage.getItem('dossier_nickname') ?? 'Caitee',
+    nickname:     localStorage.getItem('dossier_nickname') ?? '',
   })
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  function handleSave() {
-    localStorage.setItem('dossier_nickname', form.nickname)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  useEffect(() => {
+    if (!data) return
+    setForm({
+      firstName:    data.firstName ?? '',
+      lastName:     data.lastName ?? '',
+      businessName: data.businessName ?? '',
+      website:      data.website ?? '',
+      timezone:     data.timezone ?? 'America/New_York',
+      nickname:     localStorage.getItem('dossier_nickname') ?? data.firstName ?? '',
+    })
+  }, [data])
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await save({
+        firstName:    form.firstName,
+        lastName:     form.lastName,
+        businessName: form.businessName || null,
+        website:      form.website || null,
+        timezone:     form.timezone,
+      })
+      localStorage.setItem('dossier_nickname', form.nickname)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSaving(false)
+    }
   }
+
+  if (loading) return <div className="text-sm" style={{ color: 'var(--color-navy-400)' }}>Loading...</div>
 
   return (
     <div className="space-y-6 max-w-lg">
       <Card className="p-6 space-y-4">
         <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-navy-700)' }}>Personal info</h3>
-        <Field label="Full name" value={form.fullName} onChange={v => setForm(p => ({ ...p, fullName: v }))} />
-        <Field label="Email" value={form.email} onChange={v => setForm(p => ({ ...p, email: v }))} type="email" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <Field label="First name" value={form.firstName} onChange={v => setForm(p => ({ ...p, firstName: v }))} />
+          <Field label="Last name" value={form.lastName} onChange={v => setForm(p => ({ ...p, lastName: v }))} />
+        </div>
         <Field
           label="Preferred name / nickname"
           value={form.nickname}
@@ -124,7 +178,7 @@ function ProfileTab() {
             fontSize: '18px', fontWeight: 700, color: 'var(--color-gold-warm)',
             flexShrink: 0,
           }}>
-            CS
+            {(form.firstName[0] ?? '') + (form.lastName[0] ?? '')}
           </div>
           <div style={{ flex: 1 }}>
             <Button variant="secondary" size="sm">Upload logo</Button>
@@ -135,7 +189,9 @@ function ProfileTab() {
         </div>
       </Card>
 
-      <Button onClick={handleSave}>{saved ? '✓ Saved' : 'Save changes'}</Button>
+      <Button onClick={handleSave} disabled={saving}>
+        {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save changes'}
+      </Button>
     </div>
   )
 }
@@ -143,21 +199,53 @@ function ProfileTab() {
 // ── Branding tab ──────────────────────────────────────────────────
 
 function BrandingTab() {
+  const { data, loading, save } = usePhotographer()
   const [form, setForm] = useState({
-    phone: '(972) 555-0000',
-    email: 'hello@caiteesmith.com',
-    instagram: '@caiteesmith',
-    calendlyUrl: '',
-    googleMeetNote: 'Request a Google Meet via email',
-    zoomNote: 'Request a Zoom link via email',
-    portalEmailSignoff: 'Looking forward to capturing your day,\nCaitee',
+    phone:                  '',
+    email:                  '',
+    instagram:              '',
+    businessAddress:        '',
+    calendlyUrl:            '',
+    portalSignoff:          '',
+    galleryDeliveryWeeks:   '8',
   })
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  function handleSave() {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  useEffect(() => {
+    if (!data) return
+    setForm({
+      phone:                data.phone ?? '',
+      email:                data.email ?? '',
+      instagram:            data.instagram ?? '',
+      businessAddress:      data.businessAddress ?? '',
+      calendlyUrl:          data.calendlyUrl ?? '',
+      portalSignoff:        data.portalSignoff ?? '',
+      galleryDeliveryWeeks: data.galleryDeliveryWeeks ? String(data.galleryDeliveryWeeks) : '8',
+    })
+  }, [data])
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await save({
+        phone:           form.phone || null,
+        instagram:       form.instagram || null,
+        businessAddress: form.businessAddress || null,
+        calendlyUrl:     form.calendlyUrl || null,
+        portalSignoff:          form.portalSignoff || null,
+        galleryDeliveryWeeks:   form.galleryDeliveryWeeks ? parseInt(form.galleryDeliveryWeeks) : 8,
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSaving(false)
+    }
   }
+
+  if (loading) return <div className="text-sm" style={{ color: 'var(--color-navy-400)' }}>Loading...</div>
 
   return (
     <div className="space-y-6 max-w-lg">
@@ -167,24 +255,34 @@ function BrandingTab() {
           This appears on the client portal, day-of sheet, and any automated emails.
         </p>
         <Field label="Phone" value={form.phone} onChange={v => setForm(p => ({ ...p, phone: v }))} placeholder="(555) 000-0000" />
-        <Field label="Email" value={form.email} onChange={v => setForm(p => ({ ...p, email: v }))} type="email" />
+        <Field label="Email" value={form.email} onChange={v => setForm(p => ({ ...p, email: v }))} type="email" hint="Read-only — tied to your login." />
         <Field label="Instagram" value={form.instagram} onChange={v => setForm(p => ({ ...p, instagram: v }))} placeholder="@handle" />
+        <Field label="Business address" value={form.businessAddress} onChange={v => setForm(p => ({ ...p, businessAddress: v }))} placeholder="123 Main St, City, State ZIP" />
+      </Card>
+
+      <Card className="p-6 space-y-4">
+        <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-navy-700)' }}>Delivery</h3>
+        <Field
+          label="Gallery delivery (weeks after wedding)"
+          value={form.galleryDeliveryWeeks}
+          onChange={v => setForm(p => ({ ...p, galleryDeliveryWeeks: v }))}
+          placeholder="8"
+          type="number"
+          hint="Shown to clients on their portal as an estimated delivery date."
+        />
       </Card>
 
       <Card className="p-6 space-y-4">
         <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-navy-700)' }}>Scheduling</h3>
         <p style={{ fontSize: '12px', color: 'var(--color-navy-400)', lineHeight: '1.5' }}>
-          How couples can book a call with you. These links appear on the Resources tab of their portal.
+          How couples can book a call with you.
         </p>
         <Field
           label="Calendly URL (optional)"
           value={form.calendlyUrl}
           onChange={v => setForm(p => ({ ...p, calendlyUrl: v }))}
           placeholder="https://calendly.com/yourname"
-          hint="If set, the Google Meet and Zoom cards will link here instead of email."
         />
-        <Field label="Google Meet note" value={form.googleMeetNote} onChange={v => setForm(p => ({ ...p, googleMeetNote: v }))} />
-        <Field label="Zoom note" value={form.zoomNote} onChange={v => setForm(p => ({ ...p, zoomNote: v }))} />
       </Card>
 
       <Card className="p-6 space-y-4">
@@ -193,15 +291,18 @@ function BrandingTab() {
         <div>
           <label style={labelStyle}>Sign-off message</label>
           <textarea
-            value={form.portalEmailSignoff}
-            onChange={e => setForm(p => ({ ...p, portalEmailSignoff: e.target.value }))}
+            value={form.portalSignoff}
+            onChange={e => setForm(p => ({ ...p, portalSignoff: e.target.value }))}
             rows={3}
             style={{ ...inputStyle, resize: 'vertical' as const }}
+            placeholder={`Looking forward to capturing your day,\n${data?.firstName ?? 'Your name'}`}
           />
         </div>
       </Card>
 
-      <Button onClick={handleSave}>{saved ? '✓ Saved' : 'Save changes'}</Button>
+      <Button onClick={handleSave} disabled={saving}>
+        {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save changes'}
+      </Button>
     </div>
   )
 }
@@ -223,16 +324,9 @@ function QuestionnaireTab() {
           <button
             onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
             style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '14px 18px',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              textAlign: 'left',
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '14px 18px', background: 'transparent', border: 'none',
+              cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -240,24 +334,13 @@ function QuestionnaireTab() {
               <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-navy-800)' }}>{section.title}</span>
               <span style={{ fontSize: '11px', color: 'var(--color-navy-300)' }}>{section.fields.length} fields</span>
             </div>
-            <span style={{ fontSize: '12px', color: 'var(--color-navy-400)', transform: expandedSection === section.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
-              ▾
-            </span>
+            <span style={{ fontSize: '12px', color: 'var(--color-navy-400)', transform: expandedSection === section.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>▾</span>
           </button>
 
           {expandedSection === section.id && (
             <div style={{ borderTop: '1px solid var(--color-navy-100)' }}>
               {section.fields.map((field, j) => (
-                <div
-                  key={field.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '12px',
-                    padding: '10px 18px',
-                    borderTop: j === 0 ? 'none' : '1px solid var(--color-navy-50)',
-                  }}
-                >
+                <div key={field.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '10px 18px', borderTop: j === 0 ? 'none' : '1px solid var(--color-navy-50)' }}>
                   <span style={{ fontSize: '10px', fontFamily: 'monospace', background: 'var(--color-navy-100)', color: 'var(--color-navy-500)', padding: '2px 6px', borderRadius: '4px', flexShrink: 0, marginTop: '1px' }}>
                     {field.type}
                   </span>
@@ -274,12 +357,6 @@ function QuestionnaireTab() {
           )}
         </Card>
       ))}
-
-      <div style={{ padding: '12px 0' }}>
-        <p style={{ fontSize: '12px', color: 'var(--color-navy-300)' }}>
-          Full questionnaire editor — add, remove, and reorder fields — coming in a future update.
-        </p>
-      </div>
     </div>
   )
 }
@@ -307,7 +384,6 @@ export default function AccountPage() {
           subtitle="Manage your profile, branding, packages, and questionnaire"
         />
 
-        {/* Tabs */}
         <div className="flex gap-0 mb-8" style={{ borderBottom: '1px solid var(--color-navy-100)' }}>
           {TABS.map(tab => (
             <button
@@ -316,15 +392,10 @@ export default function AccountPage() {
               style={{
                 borderBottomColor: activeTab === tab.id ? 'var(--color-navy-800)' : 'transparent',
                 color: activeTab === tab.id ? 'var(--color-navy-900)' : 'var(--color-navy-400)',
-                background: 'none',
-                border: 'none',
+                background: 'none', border: 'none',
                 borderBottom: `2px solid ${activeTab === tab.id ? 'var(--color-navy-800)' : 'transparent'}`,
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                marginBottom: '-1px',
-                padding: '10px 16px',
-                fontSize: '14px',
-                fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'inherit', marginBottom: '-1px',
+                padding: '10px 16px', fontSize: '14px', fontWeight: 500,
               }}
             >
               {tab.label}

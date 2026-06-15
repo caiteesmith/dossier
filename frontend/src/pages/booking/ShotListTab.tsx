@@ -19,16 +19,38 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, Button } from '@/components/ui'
+import { useDeleteShotGroup, useDeleteShotItem } from '@/hooks/useData'
 import type { ShotListGroup, ShotListItem } from '@/types'
 
-function ShotItemContent({ item }: { item: ShotListItem }) {
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1.75 3.5h10.5M5.25 3.5V2.333a.583.583 0 0 1 .583-.583h2.334a.583.583 0 0 1 .583.583V3.5M11.083 3.5l-.583 7.583a.583.583 0 0 1-.583.584H4.083a.583.583 0 0 1-.583-.584L2.917 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  )
+}
+
+function ShotItemContent({
+  item,
+  bookingId,
+  isDragging,
+}: {
+  item: ShotListItem
+  bookingId: string
+  isDragging: boolean
+}) {
+  const deleteItem = useDeleteShotItem()
+
+  function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm(`Delete "${item.description}"?`)) return
+    deleteItem.mutate({ bookingId, groupId: item.groupId, itemId: item.id })
+  }
+
   return (
     <div
-      className="flex items-center gap-3 px-5 py-3 transition-colors"
-      style={{
-        background: 'white',
-        cursor: 'grab',
-      }}
+      className="flex items-center gap-3 px-5 py-3 transition-colors group"
+      style={{ background: 'white', cursor: isDragging ? 'grabbing' : 'grab' }}
     >
       <div className="flex flex-col gap-0.5 shrink-0 opacity-30">
         <div className="w-3 h-px rounded" style={{ background: 'var(--color-navy-500)' }} />
@@ -51,11 +73,20 @@ function ShotItemContent({ item }: { item: ShotListItem }) {
       {item.notes && (
         <span className="text-xs italic shrink-0" style={{ color: 'var(--color-navy-400)' }}>{item.notes}</span>
       )}
+      <button
+        onClick={handleDelete}
+        onPointerDown={e => e.stopPropagation()}
+        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
+        style={{ color: 'var(--color-navy-300)' }}
+        title="Delete shot"
+      >
+        <TrashIcon />
+      </button>
     </div>
   )
 }
 
-function SortableShotItem({ item }: { item: ShotListItem }) {
+function SortableShotItem({ item, bookingId }: { item: ShotListItem; bookingId: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
     data: { item, type: 'item', groupId: item.groupId },
@@ -65,7 +96,6 @@ function SortableShotItem({ item }: { item: ShotListItem }) {
     <div
       ref={setNodeRef}
       style={{
-        // transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.4 : 1,
         transform: isDragging ? CSS.Transform.toString(transform) + ' scale(1.02)' : CSS.Transform.toString(transform),
@@ -73,17 +103,43 @@ function SortableShotItem({ item }: { item: ShotListItem }) {
       {...attributes}
       {...listeners}
     >
-      <ShotItemContent item={item} />
+      <ShotItemContent item={item} bookingId={bookingId} isDragging={isDragging} />
     </div>
   )
 }
 
-function ShotGroup({ group, isOver }: { group: ShotListGroup; isOver: boolean }) {
+function ShotGroup({
+  group,
+  bookingId,
+  isOver,
+}: {
+  group: ShotListGroup
+  bookingId: string
+  isOver: boolean
+}) {
+  const deleteGroup = useDeleteShotGroup()
+
+  function handleDeleteGroup(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm(`Delete group "${group.name}" and all its shots?`)) return
+    deleteGroup.mutate({ bookingId, groupId: group.id })
+  }
+
   return (
     <div>
-      <h3 className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--color-navy-400)' }}>
-        {group.name}
-      </h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>
+          {group.name}
+        </h3>
+        <button
+          onClick={handleDeleteGroup}
+          className="p-1 rounded opacity-40 hover:opacity-100 hover:bg-red-50 transition-opacity"
+          style={{ color: 'var(--color-navy-400)' }}
+          title="Delete group"
+        >
+          <TrashIcon />
+        </button>
+      </div>
       <Card>
         <div
           className="min-h-12 transition-colors rounded-xl overflow-hidden"
@@ -98,7 +154,7 @@ function ShotGroup({ group, isOver }: { group: ShotListGroup; isOver: boolean })
               <div>
                 {group.items.map((item, i) => (
                   <div key={item.id} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)' }}>
-                    <SortableShotItem item={item} />
+                    <SortableShotItem item={item} bookingId={bookingId} />
                   </div>
                 ))}
               </div>
@@ -115,11 +171,16 @@ interface ShotListTabProps {
   initialGroups: ShotListGroup[]
 }
 
-export default function ShotListTab({ initialGroups }: ShotListTabProps) {
-  const [groups, setGroups] = useState<ShotListGroup[]>(initialGroups)
+export default function ShotListTab({ bookingId, initialGroups }: ShotListTabProps) {
+  // draggingGroups is only non-null while a drag is in progress.
+  // Otherwise we fall through to initialGroups (the live TanStack Query data),
+  // so newly added groups appear without a refresh.
+  const [draggingGroups, setDraggingGroups] = useState<ShotListGroup[] | null>(null)
   const [activeItemId, setActiveItemId] = useState<UniqueIdentifier | null>(null)
   const [overGroupId, setOverGroupId] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  const groups = draggingGroups ?? initialGroups
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -130,6 +191,8 @@ export default function ShotListTab({ initialGroups }: ShotListTabProps) {
   }
 
   function handleDragStart(event: DragStartEvent) {
+    // Snapshot current data into draggingGroups so we can mutate it freely
+    setDraggingGroups(initialGroups)
     setActiveItemId(event.active.id)
   }
 
@@ -144,9 +207,10 @@ export default function ShotListTab({ initialGroups }: ShotListTabProps) {
     if (overGroup) {
       setOverGroupId(overGroup.id)
       if (overGroup.id === activeGroup.id) return
-      setGroups(prev => {
+      setDraggingGroups(prev => {
+        const src = (prev ?? initialGroups)
         const item = activeGroup.items.find(i => i.id === active.id)!
-        return prev.map(g => {
+        return src.map(g => {
           if (g.id === activeGroup.id) return { ...g, items: g.items.filter(i => i.id !== active.id) }
           if (g.id === overGroup.id) return { ...g, items: [...g.items, { ...item, groupId: g.id }] }
           return g
@@ -160,17 +224,18 @@ export default function ShotListTab({ initialGroups }: ShotListTabProps) {
     setOverGroupId(overGroup2.id)
 
     if (activeGroup.id === overGroup2.id) {
-      setGroups(prev => prev.map(g => {
+      setDraggingGroups(prev => (prev ?? initialGroups).map(g => {
         if (g.id !== activeGroup.id) return g
         const oldIndex = g.items.findIndex(i => i.id === active.id)
         const newIndex = g.items.findIndex(i => i.id === over.id)
         return { ...g, items: arrayMove(g.items, oldIndex, newIndex) }
       }))
     } else {
-      setGroups(prev => {
+      setDraggingGroups(prev => {
+        const src = prev ?? initialGroups
         const item = activeGroup.items.find(i => i.id === active.id)!
         const updatedItem = { ...item, groupId: overGroup2.id }
-        return prev.map(g => {
+        return src.map(g => {
           if (g.id === activeGroup.id) return { ...g, items: g.items.filter(i => i.id !== active.id) }
           if (g.id === overGroup2.id) {
             const overIndex = g.items.findIndex(i => i.id === over.id)
@@ -184,12 +249,15 @@ export default function ShotListTab({ initialGroups }: ShotListTabProps) {
     }
   }
 
-  function handleDragEnd() {
+  function handleDragEnd(_event: DragEndEvent) {
+    // Drop back to live data — TanStack Query will reflect the persisted order
+    setDraggingGroups(null)
     setActiveItemId(null)
     setOverGroupId(null)
   }
 
   function handleDragCancel() {
+    setDraggingGroups(null)
     setActiveItemId(null)
     setOverGroupId(null)
   }
@@ -224,10 +292,9 @@ export default function ShotListTab({ initialGroups }: ShotListTabProps) {
           </div>
 
           {groups.map(group => (
-            <ShotGroup key={group.id} group={group} isOver={overGroupId === group.id} />
+            <ShotGroup key={group.id} group={group} bookingId={bookingId} isOver={overGroupId === group.id} />
           ))}
         </div>
-
       </DndContext>
 
       <div className="mt-4">

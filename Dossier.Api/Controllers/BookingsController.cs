@@ -137,7 +137,7 @@ public class BookingsController(DossierDbContext db) : ControllerBase
             PackageName         = req.PackageName,
             PackagePrice        = req.PackagePrice,
             HoursCovered        = req.HoursCovered,
-            Status              = BookingStatus.Confirmed,
+            Status              = BookingStatus.Booked,
             WorkflowStatus      = "booked",
             PortalToken         = Guid.NewGuid(),
             PortalEnabled       = true,
@@ -219,7 +219,7 @@ public class BookingsController(DossierDbContext db) : ControllerBase
         {
             ("Send contract",                  TaskCategory.Admin),
             ("Collect deposit",                TaskCategory.Admin),
-            ("Send portal link to couple",     TaskCategory.Client),
+            ("Confirm final timeline and shot list",     TaskCategory.Client),
             ("Review questionnaire responses", TaskCategory.Admin),
             ("Build shot list",                TaskCategory.Admin),
             ("Build timeline",                 TaskCategory.Admin),

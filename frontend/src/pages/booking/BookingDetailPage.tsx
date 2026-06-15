@@ -6,12 +6,12 @@ import { useBookingDetail, useToggleTask, useUpdateBooking, useUpdateWorkflowSta
 import type { Vendor } from '@/types'
 import { DayOfSheet } from '@/components/booking/DayOfSheet'
 import { WeatherWidget } from '@/components/ui/WeatherWidget'
-import { SAMPLE_QUESTIONNAIRE_RESPONSE } from '@/data/questionnaire'
 import ShotListTab from './ShotListTab'
 import TimelineTab from './TimelineTab'
 import BlogGeneratorTab from './BlogGeneratorTab'
-import AddTaskForm from '@/components/forms/AddTaskForm'
-import AddVendorForm from '@/components/forms/AddVendorForm'
+import VendorsTab from './VendorsTab'
+import QuestionnaireTab from './QuestionnaireTab'
+import { TasksTab } from './TasksTab'
 import AddShotGroupForm from '@/components/forms/AddShotGroupForm'
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ function daysUntil(dateStr: string) {
   return Math.ceil((new Date(year, month - 1, day).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 }
 
-type Tab = 'overview' | 'tasks' | 'sessions' | 'calls' | 'timeline' | 'shotlist' | 'vendors' | 'blog'
+type Tab = 'overview' | 'tasks' | 'sessions' | 'calls' | 'timeline' | 'shotlist' | 'vendors' | 'questionnaire' | 'blog'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -92,6 +92,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'timeline', label: 'Timeline' },
   { id: 'shotlist', label: 'Shot list' },
   { id: 'vendors',  label: 'Vendors' },
+  { id: 'questionnaire', label: 'Questionnaire' },
   { id: 'blog',     label: 'Blog post' },
 ]
 
@@ -398,10 +399,11 @@ function CallsTab({ calls, onAdd, onDelete }: { calls: CallLog[]; onAdd: (c: Cal
 function OverviewTab({ bookingId }: { bookingId: string }) {
   const { data } = useBookingDetail(bookingId)
   const updateBooking = useUpdateBooking()
+  const toggleTask = useToggleTask()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({
     partnerOneName: '', partnerTwoName: '', email: '', phone: '', weddingDate: '',
-    venueName: '', venueAddress: '', venueLat: '', venueLng: '', packageName: '',
+    venueName: '', venueAddress: '', venueLat: '', venueLng: '', coordsPaste: '', packageName: '',
     packagePrice: '', hoursCovered: '', notes: '', partnerOneLegalName: '',
     partnerTwoLegalName: '', marriedSurname: '', mailingAddress: '', mailingCity: '', mailingState: '', mailingZip: '',
   })
@@ -414,6 +416,7 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
       venueName: data!.venueName, venueAddress: data!.venueAddress ?? '',
       venueLat: data!.venueLat ? String(data!.venueLat) : '',
       venueLng: data!.venueLng ? String(data!.venueLng) : '',
+      coordsPaste: data!.venueLat && data!.venueLng ? `${data!.venueLat}, ${data!.venueLng}` : '',
       packageName: data!.packageName ?? '',
       packagePrice: data!.packagePrice ? String(data!.packagePrice) : '',
       hoursCovered: data!.hoursCovered ? String(data!.hoursCovered) : '',
@@ -484,7 +487,26 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
             <F label="Wedding date" field="weddingDate" type="date" /><F label="Package" field="packageName" placeholder="e.g. Signature" />
             <F label="Venue name" field="venueName" span2 />
             <F label="Venue address" field="venueAddress" placeholder="123 Main St, City, State" span2 />
-            <F label="Latitude" field="venueLat" placeholder="44.3793" /><F label="Longitude" field="venueLng" placeholder="-73.9799" />
+            <div style={{ gridColumn: 'span 2' }}>
+              <label style={lS}>Coordinates (paste from Google Maps)</label>
+              <input
+                value={form.coordsPaste}
+                onChange={e => {
+                  const raw = e.target.value
+                  setForm(p => ({ ...p, coordsPaste: raw }))
+                  // Parse "lat, lng" — handles "44.3793, -73.9799" and "44.3793,-73.9799"
+                  const match = raw.match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/)
+                  if (match) setForm(p => ({ ...p, coordsPaste: raw, venueLat: match[1], venueLng: match[2] }))
+                }}
+                placeholder="e.g. 44.3793, -73.9799"
+                style={iS}
+              />
+              {form.venueLat && form.venueLng && (
+                <p style={{ fontSize: '11px', color: 'var(--color-navy-400)', marginTop: '3px' }}>
+                  ✓ {form.venueLat}, {form.venueLng}
+                </p>
+              )}
+            </div>
             <F label="Price" field="packagePrice" type="number" /><F label="Hours" field="hoursCovered" type="number" />
             <div style={{ gridColumn: 'span 2' }}>
               <label style={lS}>Notes</label>
@@ -530,12 +552,22 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
         <div className="w-full rounded-full h-1.5 mb-4" style={{ background: 'var(--color-navy-100)' }}>
           <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: progress + '%', background: 'var(--color-navy-700)' }} />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          {data.tasks.slice(0, 6).map(task => (
-            <div key={task.id} className="flex items-center gap-2 text-sm">
-              <span style={{ color: task.completed ? '#276840' : 'var(--color-navy-300)' }}>{task.completed ? '✓' : '○'}</span>
-              <span style={{ color: task.completed ? 'var(--color-navy-400)' : 'var(--color-navy-700)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title}</span>
-            </div>
+        <div className="grid grid-cols-2 gap-1">
+          {data.tasks.map(task => (
+            <label key={task.id} className="flex items-center gap-2 text-sm py-1 px-1 rounded cursor-pointer transition-colors"
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-fog)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <input
+                type="checkbox"
+                checked={task.completed}
+                onChange={e => toggleTask.mutate({ bookingId, taskId: task.id, completed: e.target.checked })}
+                className="w-4 h-4 rounded shrink-0"
+              />
+              <span style={{ color: task.completed ? 'var(--color-navy-400)' : 'var(--color-navy-700)', textDecoration: task.completed ? 'line-through' : 'none' }}>
+                {task.title}
+              </span>
+            </label>
           ))}
         </div>
         {data.notes && (
@@ -549,74 +581,6 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
   )
 }
 
-// ── Tasks tab ─────────────────────────────────────────────────────
-
-function TasksTab({ bookingId }: { bookingId: string }) {
-  const { data } = useBookingDetail(bookingId)
-  const toggleTask = useToggleTask()
-  const [showAdd, setShowAdd] = useState(false)
-  if (!data) return null
-  const categories = ['admin', 'client', 'day_of', 'post_wedding', 'manual'] as const
-  const categoryLabels: Record<string, string> = { admin: 'Admin', client: 'Client', day_of: 'Day of', post_wedding: 'Post wedding', manual: 'Custom' }
-  return (
-    <div className="space-y-6">
-      {categories.map(cat => {
-        const tasks = data.tasks.filter(t => t.category === cat)
-        if (tasks.length === 0) return null
-        return (
-          <div key={cat}>
-            <h3 className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--color-navy-400)' }}>{categoryLabels[cat]}</h3>
-            <Card>
-              <div>
-                {tasks.map((task, i) => (
-                  <label key={task.id} className="flex items-center gap-3 px-5 py-3.5 cursor-pointer transition-colors" style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-fog)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <input type="checkbox" checked={task.completed} onChange={e => toggleTask.mutate({ bookingId, taskId: task.id, completed: e.target.checked })} className="w-4 h-4 rounded" />
-                    <span className="text-sm flex-1" style={{ color: task.completed ? 'var(--color-navy-400)' : 'var(--color-navy-800)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title}</span>
-                    {task.dueDate && <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>due {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                  </label>
-                ))}
-              </div>
-            </Card>
-          </div>
-        )
-      })}
-      {showAdd ? <AddTaskForm bookingId={bookingId} onClose={() => setShowAdd(false)} /> : <button onClick={() => setShowAdd(true)} style={{ fontSize: '13px', color: 'var(--color-navy-400)', background: 'none', border: '1px dashed var(--color-navy-200)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}>+ Add task</button>}
-    </div>
-  )
-}
-
-// ── Vendors tab ───────────────────────────────────────────────────
-
-function VendorsTab({ bookingId, vendors }: { bookingId: string; vendors: Vendor[] }) {
-  const [showAdd, setShowAdd] = useState(false)
-  return (
-    <div className="space-y-2">
-      <Card>
-        <div>
-          {vendors.length === 0 && <div className="px-6 py-8 text-center"><p className="text-sm italic" style={{ color: 'var(--color-navy-400)' }}>No vendors added yet</p></div>}
-          {vendors.map((vendor, i) => (
-            <div key={vendor.id} className="flex items-center justify-between px-6 py-4" style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-navy-100)' }}>
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs uppercase tracking-widest w-28 shrink-0" style={{ color: 'var(--color-navy-400)' }}>{vendor.role}</span>
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-navy-800)' }}>{vendor.name}</span>
-                </div>
-                {vendor.notes && <p className="text-xs italic mt-1" style={{ color: 'var(--color-navy-400)', marginLeft: '124px' }}>{vendor.notes}</p>}
-              </div>
-              <div className="flex items-center gap-4">
-                {vendor.phone && <a href={'tel:' + vendor.phone} className="text-sm hover:opacity-70" style={{ color: 'var(--color-steel-500)' }}>📞 {vendor.phone}</a>}
-                {vendor.email && <a href={'mailto:' + vendor.email} className="text-xs hover:opacity-70" style={{ color: 'var(--color-steel-500)' }}>{vendor.email}</a>}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-      {showAdd ? <AddVendorForm bookingId={bookingId} onClose={() => setShowAdd(false)} /> : <button onClick={() => setShowAdd(true)} style={{ marginTop: '8px', fontSize: '13px', color: 'var(--color-navy-400)', background: 'none', border: '1px dashed var(--color-navy-200)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}>+ Add vendor</button>}
-    </div>
-  )
-}
 
 // ── Main page ─────────────────────────────────────────────────────
 
@@ -643,9 +607,6 @@ export default function BookingDetailPage() {
   const workflowStatus = ((data as any).workflowStatus ?? 'booked') as WorkflowStatus
   const days = daysUntil(data.weddingDate)
   const completedTasks = data.tasks.filter(t => t.completed).length
-  const outstandingTasks = data.tasks.filter(t => !t.completed)
-  const overdueTasks = outstandingTasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date())
-  const upcomingTasks = outstandingTasks.filter(t => !t.dueDate || new Date(t.dueDate) >= new Date()).slice(0, 3)
 
   const tabsWithCounts = TABS.map(tab => ({
     ...tab,
@@ -659,7 +620,7 @@ export default function BookingDetailPage() {
       <div className="px-10 py-10 max-w-4xl">
         <Link to="/bookings" className="text-xs mb-6 inline-block hover:opacity-70 transition-opacity" style={{ color: 'var(--color-navy-400)' }}>← Bookings</Link>
 
-        {showDayOf && <DayOfSheet booking={data} answers={SAMPLE_QUESTIONNAIRE_RESPONSE} onClose={() => setShowDayOf(false)} />}
+        {showDayOf && <DayOfSheet booking={data} onClose={() => setShowDayOf(false)} />}
 
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
@@ -680,32 +641,11 @@ export default function BookingDetailPage() {
           </div>
         </div>
 
-        {/* Workflow pipeline — now wired to backend */}
+        {/* Workflow pipeline */}
         <WorkflowPipeline
           status={workflowStatus}
           onChange={(s) => updateWorkflowStatus.mutate({ id: id ?? '', workflowStatus: s })}
         />
-
-        {/* Outstanding tasks banner */}
-        {outstandingTasks.length > 0 && (
-          <div className="rounded-xl px-5 py-4 mb-6 flex items-start justify-between gap-6"
-            style={{ background: overdueTasks.length > 0 ? '#fef3e2' : 'var(--color-navy-50)', border: `1px solid ${overdueTasks.length > 0 ? 'var(--color-gold-soft)' : 'var(--color-navy-100)'}` }}>
-            <div className="flex-1">
-              <p className="text-xs font-medium uppercase tracking-widest mb-2" style={{ color: overdueTasks.length > 0 ? 'var(--color-gold-warm)' : 'var(--color-navy-500)' }}>
-                {overdueTasks.length > 0 ? `⚠ ${overdueTasks.length} overdue · ` : ''}{outstandingTasks.length} tasks remaining
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-1">
-                {upcomingTasks.map(task => (
-                  <span key={task.id} className="text-xs flex items-center gap-1.5" style={{ color: 'var(--color-navy-600)' }}>
-                    <span style={{ color: 'var(--color-navy-300)' }}>○</span>{task.title}
-                  </span>
-                ))}
-                {outstandingTasks.length > 3 && <span className="text-xs" style={{ color: 'var(--color-navy-400)' }}>+{outstandingTasks.length - 3} more</span>}
-              </div>
-            </div>
-            <button onClick={() => setActiveTab('tasks')} className="text-xs font-medium shrink-0 hover:opacity-70" style={{ color: 'var(--color-steel-500)' }}>View all →</button>
-          </div>
-        )}
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: '0', marginBottom: '24px', borderBottom: '1px solid var(--color-navy-100)', overflowX: 'auto' }}>
@@ -730,8 +670,9 @@ export default function BookingDetailPage() {
               {showAddShotGroup ? <AddShotGroupForm bookingId={id ?? ''} onClose={() => setShowAddShotGroup(false)} /> : <button onClick={() => setShowAddShotGroup(true)} style={{ marginTop: '12px', fontSize: '13px', color: 'var(--color-navy-400)', background: 'none', border: '1px dashed var(--color-navy-200)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}>+ Add shot group</button>}
             </div>
           )}
-          {activeTab === 'vendors'   && <VendorsTab bookingId={id ?? ''} vendors={data.vendors} />}
-          {activeTab === 'blog'      && <BlogGeneratorTab booking={data} />}
+          {activeTab === 'vendors'        && <VendorsTab bookingId={id ?? ''} vendors={data.vendors} />}
+          {activeTab === 'questionnaire'  && <QuestionnaireTab bookingId={id ?? ''} portalToken={String(data.portalToken)} />}
+          {activeTab === 'blog'           && <BlogGeneratorTab booking={data} />}
         </div>
       </div>
     </AppShell>
