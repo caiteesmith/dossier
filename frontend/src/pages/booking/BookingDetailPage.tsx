@@ -7,11 +7,13 @@ import type { Vendor } from '@/types'
 import { DayOfSheet } from '@/components/booking/DayOfSheet'
 import { WeatherWidget } from '@/components/ui/WeatherWidget'
 import ShotListTab from './ShotListTab'
+import { GalleryTrackerEditor } from '@/components/booking/GalleryTracker'
 import TimelineTab from './TimelineTab'
 import BlogGeneratorTab from './BlogGeneratorTab'
 import VendorsTab from './VendorsTab'
 import QuestionnaireTab from './QuestionnaireTab'
 import { TasksTab } from './TasksTab'
+import DayOfTab from './DayOfTab'
 import AddShotGroupForm from '@/components/forms/AddShotGroupForm'
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -82,7 +84,7 @@ function daysUntil(dateStr: string) {
   return Math.ceil((new Date(year, month - 1, day).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
 }
 
-type Tab = 'overview' | 'tasks' | 'sessions' | 'calls' | 'timeline' | 'shotlist' | 'vendors' | 'questionnaire' | 'blog'
+type Tab = 'overview' | 'tasks' | 'sessions' | 'calls' | 'timeline' | 'shotlist' | 'vendors' | 'questionnaire' | 'dayof' | 'blog'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' },
@@ -93,6 +95,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'shotlist', label: 'Shot list' },
   { id: 'vendors',  label: 'Vendors' },
   { id: 'questionnaire', label: 'Questionnaire' },
+  { id: 'dayof',        label: 'Day of' },
   { id: 'blog',     label: 'Blog post' },
 ]
 
@@ -401,6 +404,7 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
   const updateBooking = useUpdateBooking()
   const toggleTask = useToggleTask()
   const [editing, setEditing] = useState(false)
+  const [addOns, setAddOns] = useState<{name:string;price:string;notes:string}[]>([])
   const [form, setForm] = useState({
     partnerOneName: '', partnerTwoName: '', email: '', phone: '', weddingDate: '',
     venueName: '', venueAddress: '', venueLat: '', venueLng: '', coordsPaste: '', packageName: '',
@@ -429,6 +433,7 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
       mailingState: (data as any).mailingState ?? '',
       mailingZip: (data as any).mailingZip ?? '',
     })
+    setAddOns((data as any).addOns ?? [])
     setEditing(true)
   }
 
@@ -450,7 +455,8 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
       mailingCity: form.mailingCity || undefined,
       mailingState: form.mailingState || undefined,
       mailingZip: form.mailingZip || undefined,
-    }, { onSuccess: () => setEditing(false) })
+      addOns: addOns,
+    } as any, { onSuccess: () => setEditing(false) })
   }
 
   function F({ label, field, type = 'text', placeholder, span2 }: { label: string; field: keyof typeof form; type?: string; placeholder?: string; span2?: boolean }) {
@@ -509,6 +515,24 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
             </div>
             <F label="Price" field="packagePrice" type="number" /><F label="Hours" field="hoursCovered" type="number" />
             <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={lS}>Add-ons / à la carte</label>
+                <button type="button" onClick={() => setAddOns(p => [...p, {name:'',price:'',notes:''}])} style={{ fontSize: '11px', color: 'var(--color-steel-500)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>+ Add</button>
+              </div>
+              {addOns.length === 0 && <p style={{ fontSize: '11px', color: 'var(--color-navy-300)', fontStyle: 'italic' }}>No add-ons yet</p>}
+              {addOns.map((ao, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: '6px', marginBottom: '6px', alignItems: 'center' }}>
+                  <input value={ao.name} onChange={e => setAddOns(p => p.map((x,j) => j===i ? {...x,name:e.target.value} : x))} placeholder="Add-on name" style={iS} />
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '12px', color: 'var(--color-navy-400)' }}>$</span>
+                    <input value={ao.price} onChange={e => setAddOns(p => p.map((x,j) => j===i ? {...x,price:e.target.value} : x))} placeholder="Price" type="number" style={{ ...iS, paddingLeft: '22px' }} />
+                  </div>
+                  <input value={ao.notes} onChange={e => setAddOns(p => p.map((x,j) => j===i ? {...x,notes:e.target.value} : x))} placeholder="Notes (optional)" style={iS} />
+                  <button onClick={() => setAddOns(p => p.filter((_,j) => j!==i))} style={{ fontSize: '16px', color: 'var(--color-navy-300)', background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px' }} onMouseEnter={e=>(e.currentTarget.style.color='#ef4444')} onMouseLeave={e=>(e.currentTarget.style.color='var(--color-navy-300)')}>×</button>
+                </div>
+              ))}
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
               <label style={lS}>Notes</label>
               <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} style={{ ...iS, resize: 'vertical' }} />
             </div>
@@ -533,6 +557,9 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
             {data.venueAddress && <Row label="Address" value={data.venueAddress} />}
             {data.packageName && <Row label="Package" value={`${data.packageName}${data.packagePrice ? ' | $' + data.packagePrice.toLocaleString() : ''}`} />}
             {data.hoursCovered && <Row label="Coverage" value={data.hoursCovered + 'h'} />}
+            {((data as any).addOns ?? []).map((ao: any, i: number) => (
+              <Row key={i} label={ao.name} value={`${ao.price ? '$' + Number(ao.price).toLocaleString() : ''}${ao.notes ? (ao.price ? ' · ' : '') + ao.notes : ''}`} />
+            ))}
             {data.notes && <Row label="Notes" value={data.notes} />}
             {(data as any).partnerOneLegalName && <Row label="Legal name 1" value={(data as any).partnerOneLegalName} />}
             {(data as any).partnerTwoLegalName && <Row label="Legal name 2" value={(data as any).partnerTwoLegalName} />}
@@ -544,7 +571,23 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
         <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>Weather & light</h3>
         <WeatherWidget booking={data} compact={false} />
       </div>
-      <Card className="p-6 col-span-2">
+      <Card className="p-6 col-span-1">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>Gallery editing status</h3>
+        </div>
+        <GalleryTrackerEditor
+          galleryStageIndex={data.galleryStageIndex ?? 0}
+          galleryStages={data.galleryStages}
+          saving={updateBooking.isPending}
+          onUpdate={(stageIndex, stages) => updateBooking.mutate({
+            id: bookingId,
+            galleryStageIndex: stageIndex,
+            galleryStages: stages,
+          })}
+        />
+      </Card>
+
+      <Card className="p-6 col-span-1">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>Milestone progress</h3>
           <span className="text-sm font-medium" style={{ color: 'var(--color-navy-700)' }}>{completedTasks} / {totalTasks} complete</span>
@@ -597,7 +640,7 @@ export default function BookingDetailPage() {
   if (isLoading) return <AppShell><div className="px-10 py-10 text-sm" style={{ color: 'var(--color-navy-400)' }}>Loading...</div></AppShell>
   if (!data) return (
     <AppShell>
-      <div className="px-10 py-10">
+      <div className="px-10 py-10 max-w-5xl">
         <p style={{ color: 'var(--color-navy-400)' }}>Booking not found.</p>
         <Link to="/bookings" className="text-sm mt-2 inline-block hover:opacity-70" style={{ color: 'var(--color-steel-500)' }}>← Back to bookings</Link>
       </div>
@@ -617,7 +660,7 @@ export default function BookingDetailPage() {
 
   return (
     <AppShell>
-      <div className="px-10 py-10 max-w-4xl">
+      <div className="px-10 py-10 max-w-5xl">
         <Link to="/bookings" className="text-xs mb-6 inline-block hover:opacity-70 transition-opacity" style={{ color: 'var(--color-navy-400)' }}>← Bookings</Link>
 
         {showDayOf && <DayOfSheet booking={data} onClose={() => setShowDayOf(false)} />}
@@ -648,10 +691,10 @@ export default function BookingDetailPage() {
         />
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: '0', marginBottom: '24px', borderBottom: '1px solid var(--color-navy-100)', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', gap: '0', marginBottom: '24px', borderBottom: '1px solid var(--color-navy-100)' }}>
           {tabsWithCounts.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 500, background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab.id ? 'var(--color-navy-800)' : 'transparent'}`, color: activeTab === tab.id ? 'var(--color-navy-900)' : 'var(--color-navy-400)', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '-1px', whiteSpace: 'nowrap' }}>
+              style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 500, background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab.id ? 'var(--color-navy-800)' : 'transparent'}`, color: activeTab === tab.id ? 'var(--color-navy-900)' : 'var(--color-navy-400)', cursor: 'pointer', fontFamily: 'inherit', marginBottom: '-1px', whiteSpace: 'nowrap' }}>
               {tab.label}
             </button>
           ))}
@@ -666,12 +709,13 @@ export default function BookingDetailPage() {
           {activeTab === 'timeline'  && <TimelineTab bookingId={id ?? ''} initialTimeline={data.timeline} />}
           {activeTab === 'shotlist'  && (
             <div>
-              <ShotListTab bookingId={id ?? ''} initialGroups={data.shotListGroups} />
+              <ShotListTab bookingId={id ?? ''} initialGroups={data.shotListGroups} onAddGroup={() => setShowAddShotGroup(true)} />
               {showAddShotGroup ? <AddShotGroupForm bookingId={id ?? ''} onClose={() => setShowAddShotGroup(false)} /> : <button onClick={() => setShowAddShotGroup(true)} style={{ marginTop: '12px', fontSize: '13px', color: 'var(--color-navy-400)', background: 'none', border: '1px dashed var(--color-navy-200)', borderRadius: '8px', padding: '8px 16px', cursor: 'pointer', fontFamily: 'inherit', width: '100%' }}>+ Add shot group</button>}
             </div>
           )}
           {activeTab === 'vendors'        && <VendorsTab bookingId={id ?? ''} vendors={data.vendors} />}
           {activeTab === 'questionnaire'  && <QuestionnaireTab bookingId={id ?? ''} portalToken={String(data.portalToken)} />}
+          {activeTab === 'dayof'          && <DayOfTab bookingId={id ?? ''} />}
           {activeTab === 'blog'           && <BlogGeneratorTab booking={data} />}
         </div>
       </div>

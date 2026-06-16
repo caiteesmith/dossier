@@ -17,8 +17,9 @@ function addDays(dateStr: string, days: number) {
 }
 
 export default function PortalDocuments({ booking }: Props) {
-  const galleryWeeks = booking.photographer?.galleryDeliveryWeeks ?? 8
-  const galleryDate = booking.weddingDate ? addDays(booking.weddingDate, galleryWeeks * 7) : null
+  const galleryMin = booking.photographer?.galleryDeliveryWeeks ?? 6
+  const galleryMax = booking.photographer?.galleryDeliveryWeeksMax ?? 8
+  const galleryDate = booking.weddingDate ? addDays(booking.weddingDate, galleryMax * 7) : null
 
   const docs: DocStatus[] = [
     {
@@ -46,8 +47,8 @@ export default function PortalDocuments({ booking }: Props) {
       label: 'Gallery delivery',
       status: 'not_started',
       detail: galleryDate
-        ? `By ${galleryDate} (${galleryWeeks} weeks after your wedding)`
-        : `${galleryWeeks} weeks after your wedding date`,
+        ? `By ${galleryDate} (${galleryMin}–${galleryMax} weeks after your wedding)`
+        : `${galleryMin}–${galleryMax} weeks after your wedding date`,
     },
   ]
 
@@ -108,6 +109,17 @@ export default function PortalDocuments({ booking }: Props) {
             </div>
           )}
         </div>
+        {((booking as any).addOns ?? []).length > 0 && (
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <p style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', marginBottom: '8px' }}>Add-ons</p>
+            {((booking as any).addOns ?? []).map((ao: any, i: number) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: 'rgba(255,255,255,0.7)', marginBottom: '4px' }}>
+                <span>{ao.name}{ao.notes ? <span style={{ opacity: 0.5, fontSize: '12px' }}> · {ao.notes}</span> : ''}</span>
+                {ao.price && <span style={{ color: '#f5c842' }}>${Number(ao.price).toLocaleString()}</span>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

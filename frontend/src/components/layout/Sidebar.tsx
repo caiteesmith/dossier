@@ -96,7 +96,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside style={{ width: 'var(--sidebar-width)', background: 'var(--color-navy-900)' }}
+    <aside style={{ width: '300px', background: 'var(--color-navy-900)' }}
       className="fixed top-0 left-0 h-screen flex flex-col shrink-0 z-20">
       {/* Logo */}
       <div className="px-6 pt-8 pb-10">

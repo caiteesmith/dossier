@@ -69,8 +69,13 @@ function LeadCardContent({
           )}
         </p>
         {lead.weddingDate && (
-          <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>{formatDate(lead.weddingDate)}</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>
+            💍 {formatDate(lead.weddingDate)}
+          </p>
         )}
+        <p className="text-xs" style={{ color: 'var(--color-navy-300)' }}>
+          Inquired {formatDate(lead.inquiryDate)}
+        </p>
       </div>
       {lead.venueName && <p className="text-xs" style={{ color: 'var(--color-navy-500)' }}>📍 {lead.venueName}</p>}
       {lead.budget && <p className="text-xs" style={{ color: 'var(--color-navy-500)' }}>💰 ${lead.budget.toLocaleString()} budget</p>}

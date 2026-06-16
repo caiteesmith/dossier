@@ -34,7 +34,11 @@
   --color-mist:     #dce4ef;
   --color-fog:      #f0f3f8;
 
-  --sidebar-width: 240px;
+  --sidebar-width: 260px;
+}
+
+:root {
+  --sidebar-width: 260px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }

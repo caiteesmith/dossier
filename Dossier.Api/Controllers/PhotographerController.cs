@@ -43,18 +43,20 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
         var photographer = await db.Photographers.FindAsync(pid);
         if (photographer is null) return NotFound();
 
-        if (req.FirstName       is not null) photographer.FirstName       = req.FirstName;
-        if (req.LastName        is not null) photographer.LastName        = req.LastName;
-        if (req.BusinessName    is not null) photographer.BusinessName    = req.BusinessName;
-        if (req.Phone           is not null) photographer.Phone           = req.Phone;
-        if (req.Website         is not null) photographer.Website         = req.Website;
-        if (req.Instagram       is not null) photographer.Instagram       = req.Instagram;
-        if (req.CalendlyUrl     is not null) photographer.CalendlyUrl     = req.CalendlyUrl;
-        if (req.Timezone        is not null) photographer.Timezone        = req.Timezone;
-        if (req.BusinessAddress is not null) photographer.BusinessAddress = req.BusinessAddress;
-        if (req.LogoUrl         is not null) photographer.LogoUrl         = req.LogoUrl;
+        if (req.FirstName             is not null) photographer.FirstName             = req.FirstName;
+        if (req.LastName              is not null) photographer.LastName              = req.LastName;
+        if (req.BusinessName          is not null) photographer.BusinessName          = req.BusinessName;
+        if (req.Phone                 is not null) photographer.Phone                 = req.Phone;
+        if (req.Website               is not null) photographer.Website               = req.Website;
+        if (req.Instagram             is not null) photographer.Instagram             = req.Instagram;
+        if (req.CalendlyUrl           is not null) photographer.CalendlyUrl           = req.CalendlyUrl;
+        if (req.Timezone              is not null) photographer.Timezone              = req.Timezone;
+        if (req.BusinessAddress       is not null) photographer.BusinessAddress       = req.BusinessAddress;
+        if (req.LogoUrl               is not null) photographer.LogoUrl               = req.LogoUrl;
+        if (req.HeadshotUrl           is not null) photographer.HeadshotUrl           = req.HeadshotUrl;
         if (req.PortalSignoff         is not null) photographer.PortalSignoff         = req.PortalSignoff;
-        if (req.GalleryDeliveryWeeks  is not null) photographer.GalleryDeliveryWeeks  = req.GalleryDeliveryWeeks.Value;
+        if (req.GalleryDeliveryWeeks    is not null) photographer.GalleryDeliveryWeeks    = req.GalleryDeliveryWeeks.Value;
+        if (req.GalleryDeliveryWeeksMax is not null) photographer.GalleryDeliveryWeeksMax = req.GalleryDeliveryWeeksMax.Value;
 
         photographer.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -116,18 +118,20 @@ public class PhotographerController(DossierDbContext db) : ControllerBase
 }
 
 public record UpdatePhotographerRequest(
-    string? FirstName       = null,
-    string? LastName        = null,
-    string? BusinessName    = null,
-    string? Phone           = null,
-    string? Website         = null,
-    string? Instagram       = null,
-    string? CalendlyUrl     = null,
-    string? Timezone        = null,
-    string? BusinessAddress = null,
-    string? LogoUrl         = null,
+    string? FirstName             = null,
+    string? LastName              = null,
+    string? BusinessName          = null,
+    string? Phone                 = null,
+    string? Website               = null,
+    string? Instagram             = null,
+    string? CalendlyUrl           = null,
+    string? Timezone              = null,
+    string? BusinessAddress       = null,
+    string? LogoUrl               = null,
+    string? HeadshotUrl           = null,
     string? PortalSignoff         = null,
-    int?    GalleryDeliveryWeeks  = null
+    int?    GalleryDeliveryWeeks    = null,
+    int?    GalleryDeliveryWeeksMax = null
 );
 
 public record CreatePackageRequest(

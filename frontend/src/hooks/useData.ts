@@ -226,7 +226,7 @@ export function useDeleteVendor() {
   })
 }
 
-// ── Shot groups ───────────────────────────────────────────────────
+// ── Shot groups & items ───────────────────────────────────────────
 
 export function useAddShotGroup() {
   const qc = useQueryClient()
@@ -258,6 +258,16 @@ export function useDeleteShotGroup() {
   })
 }
 
+export function useAddShotItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, groupId, description, notes }: {
+      bookingId: string; groupId: string; description: string; notes?: string
+    }) => api.post(`/api/bookings/${bookingId}/shot-list/groups/${groupId}/items`, { description, notes }).then(r => r.data),
+    onSuccess: (_d, vars) => qc.invalidateQueries({ queryKey: ['bookings', vars.bookingId] }),
+  })
+}
+
 export function useDeleteShotItem() {
   const qc = useQueryClient()
   return useMutation({
@@ -272,6 +282,41 @@ export function useDeleteShotItem() {
           ...old,
           shotListGroups: old.shotListGroups.map((g: any) =>
             g.id === groupId ? { ...g, items: g.items.filter((i: any) => i.id !== itemId) } : g
+          ),
+        }
+      })
+      return { prev }
+    },
+    onError: (_e, { bookingId }, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['bookings', bookingId], ctx.prev)
+    },
+    onSettled: (_d, _e, { bookingId }) => qc.invalidateQueries({ queryKey: ['bookings', bookingId] }),
+  })
+}
+
+export function useUpdateShotItem() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ bookingId, groupId, itemId, description, notes, sortOrder, newGroupId }: {
+      bookingId: string; groupId: string; itemId: string
+      description?: string; notes?: string; sortOrder?: number; newGroupId?: string
+    }) => api.patch(`/api/bookings/${bookingId}/shot-list/items/${itemId}`, {
+      ...(description !== undefined && { description }),
+      ...(notes !== undefined && { notes }),
+      ...(sortOrder !== undefined && { sortOrder }),
+      ...(newGroupId !== undefined && { groupId: newGroupId }),
+    }).then(r => r.data),
+    onMutate: async ({ bookingId, groupId, itemId, description, notes }) => {
+      await qc.cancelQueries({ queryKey: ['bookings', bookingId] })
+      const prev = qc.getQueryData(['bookings', bookingId])
+      qc.setQueryData(['bookings', bookingId], (old: BookingDetail | undefined) => {
+        if (!old) return old
+        return {
+          ...old,
+          shotListGroups: old.shotListGroups.map((g: any) =>
+            g.id === groupId
+              ? { ...g, items: g.items.map((i: any) => i.id === itemId ? { ...i, description: description ?? i.description, notes: notes ?? i.notes } : i) }
+              : g
           ),
         }
       })

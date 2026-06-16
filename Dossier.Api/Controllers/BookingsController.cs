@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dossier.Api.Data;
 using Dossier.Api.Extensions;
 using Dossier.Api.Models;
@@ -99,11 +100,19 @@ public class BookingsController(DossierDbContext db) : ControllerBase
             PortalToken = booking.PortalToken.ToString(),
             booking.PortalEnabled,
             booking.Notes,
+            booking.GalleryStageIndex,
+            booking.GalleryStages,
+            DayOfDetails = string.IsNullOrEmpty(booking.DayOfDetails) || booking.DayOfDetails == "{}"
+                ? null
+                : JsonSerializer.Deserialize<object>(booking.DayOfDetails),
+            AddOns = string.IsNullOrEmpty(booking.AddOns) || booking.AddOns == "[]"
+                ? null
+                : JsonSerializer.Deserialize<object>(booking.AddOns),
             booking.CreatedAt,
             booking.UpdatedAt,
-            Tasks = tasks,
-            Vendors = vendors,
-            Timeline = timeline,
+            Tasks          = tasks,
+            Vendors        = vendors,
+            Timeline       = timeline,
             ShotListGroups = shotList?.Groups ?? [],
         });
     }
@@ -194,7 +203,13 @@ public class BookingsController(DossierDbContext db) : ControllerBase
         if (req.HoursCovered        is not null) booking.HoursCovered        = req.HoursCovered;
         if (req.Status              is not null) booking.Status              = req.Status.Value;
         if (req.Notes               is not null) booking.Notes               = req.Notes;
-        if (req.WorkflowStatus       is not null) booking.WorkflowStatus       = req.WorkflowStatus;
+        if (req.GalleryStageIndex   is not null) booking.GalleryStageIndex   = req.GalleryStageIndex.Value;
+        if (req.GalleryStages       is not null) booking.GalleryStages       = req.GalleryStages;
+        if (req.WorkflowStatus      is not null) booking.WorkflowStatus      = req.WorkflowStatus;
+        if (req.DayOfDetails is not null && req.DayOfDetails.Value.ValueKind != JsonValueKind.Undefined)
+            booking.DayOfDetails = req.DayOfDetails.Value.GetRawText();
+        if (req.AddOns is not null && req.AddOns.Value.ValueKind != JsonValueKind.Undefined)
+            booking.AddOns = req.AddOns.Value.GetRawText();
 
         booking.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
@@ -217,15 +232,15 @@ public class BookingsController(DossierDbContext db) : ControllerBase
     {
         var milestones = new[]
         {
-            ("Send contract",                  TaskCategory.Admin),
-            ("Collect deposit",                TaskCategory.Admin),
-            ("Confirm final timeline and shot list",     TaskCategory.Client),
-            ("Review questionnaire responses", TaskCategory.Admin),
-            ("Build shot list",                TaskCategory.Admin),
-            ("Build timeline",                 TaskCategory.Admin),
-            ("Confirm second shooter",         TaskCategory.DayOf),
-            ("Collect final payment",          TaskCategory.Admin),
-            ("Deliver gallery",                TaskCategory.PostWedding),
+            ("Send contract",                        TaskCategory.Admin),
+            ("Collect deposit",                      TaskCategory.Admin),
+            ("Confirm final timeline and shot list", TaskCategory.Client),
+            ("Review questionnaire responses",       TaskCategory.Admin),
+            ("Build shot list",                      TaskCategory.Admin),
+            ("Build timeline",                       TaskCategory.Admin),
+            ("Confirm second shooter",               TaskCategory.DayOf),
+            ("Collect final payment",                TaskCategory.Admin),
+            ("Deliver gallery",                      TaskCategory.PostWedding),
         };
 
         var tasks = milestones.Select((m, i) => new Task_
@@ -292,5 +307,9 @@ public record UpdateBookingRequest(
     decimal?       HoursCovered        = null,
     BookingStatus? Status              = null,
     string?        Notes               = null,
-    string?        WorkflowStatus      = null
+    int?           GalleryStageIndex   = null,
+    string?        GalleryStages       = null,
+    string?        WorkflowStatus      = null,
+    JsonElement?   DayOfDetails        = null,
+    JsonElement?   AddOns              = null
 );

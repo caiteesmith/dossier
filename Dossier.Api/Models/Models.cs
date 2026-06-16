@@ -27,7 +27,9 @@ public class Photographer
     [Column("timezone")]             public string  Timezone     { get; set; } = "America/New_York";
     [Column("business_address")]     public string? BusinessAddress { get; set; }
     [Column("portal_signoff")]       public string? PortalSignoff   { get; set; }
-    [Column("gallery_delivery_weeks")] public int GalleryDeliveryWeeks { get; set; } = 8;
+    [Column("gallery_delivery_weeks")] public int GalleryDeliveryWeeks { get; set; } = 6;
+    [Column("gallery_delivery_weeks_max")] public int GalleryDeliveryWeeksMax { get; set; } = 8;
+    [Column("headshot_url")] public string? HeadshotUrl { get; set; }
 
     [Column("created_at")]           public DateTime CreatedAt   { get; set; }
     [Column("updated_at")]           public DateTime UpdatedAt   { get; set; }
@@ -88,7 +90,11 @@ public class Booking
     [Column("portal_token")]             public Guid          PortalToken        { get; set; }
     [Column("portal_enabled")]           public bool          PortalEnabled      { get; set; }
     [Column("notes")]                    public string?       Notes              { get; set; }
+    [Column("gallery_stage_index")]                    public int    GalleryStageIndex { get; set; } = 0;
+    [Column("gallery_stages", TypeName = "jsonb")]     public string GalleryStages     { get; set; } = "[\"Backup complete\",\"Sneak peek delivered\",\"Culling in progress\",\"Editing in progress\",\"Final review\",\"Gallery uploaded\"]";
     [Column("workflow_status")]           public string        WorkflowStatus      { get; set; } = "booked";
+    [Column("day_of_details", TypeName = "jsonb")] public string DayOfDetails { get; set; } = "{}";
+    [Column("add_ons", TypeName = "jsonb")] public string AddOns { get; set; } = "[]";
     [Column("created_at")]               public DateTime      CreatedAt          { get; set; }
     [Column("updated_at")]               public DateTime      UpdatedAt          { get; set; }
 }

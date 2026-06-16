@@ -1,5 +1,6 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import type { BookingDetail } from '@/types'
+import { api } from '@/lib/api'
 
 interface DayOfSheetProps {
   booking: BookingDetail
@@ -10,6 +11,7 @@ type TimelineRow = {
   label: string
   time: string
   section?: string
+  notes?: string
 }
 
 type VendorEntry = {
@@ -20,9 +22,18 @@ type VendorEntry = {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
   })
+}
+
+function to12h(hhmm: string): string {
+  if (!hhmm) return hhmm
+  const [h, m] = hhmm.split(':').map(Number)
+  const ampm = h < 12 ? 'am' : 'pm'
+  const hour = h % 12 === 0 ? 12 : h % 12
+  return `${hour}:${String(m).padStart(2, '0')}${ampm}`
 }
 
 export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
@@ -47,9 +58,17 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
     role: v.role, name: v.name, phone: v.phone, email: v.email,
   }))
 
+  const dayOf = (booking as any).dayOfDetails ?? {}
+  const [photographer, setPhotographer] = useState<Record<string, any> | null>(null)
+  useEffect(() => {
+    api.get('/api/photographer/me').then(r => setPhotographer(r.data)).catch(() => {})
+  }, [])
+  const leadName = dayOf.leadPhotographerName || (photographer ? `${photographer.firstName ?? ''} ${photographer.lastName ?? ''}`.trim() : '')
+  const leadPhone = dayOf.leadPhotographerPhone || photographer?.phone || ''
+
   const timelineRows: TimelineRow[] = booking.timeline?.blocks.map(b => ({
     label: b.title,
-    time: b.startTime,
+    time: to12h(b.startTime),
     notes: [b.location, b.notes].filter(Boolean).join(' · ') || undefined,
   })) ?? []
 
@@ -83,8 +102,11 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
           {/* ── PAGE 1: COVER ─────────────────────────────────────── */}
           <div className="page" style={{ padding: '40px', pageBreakAfter: 'always' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-              <div style={{ width: '100px', height: '60px', background: '#f0f3f8', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '10px', color: '#8b9ab0', fontFamily: 'sans-serif' }}>YOUR LOGO</span>
+              <div style={{ width: '125px', height: '125px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: photographer?.logoUrl ? 'transparent' : '#f0f3f8' }}>
+                {photographer?.logoUrl
+                  ? <img src={photographer.logoUrl} alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  : <span style={{ fontSize: '10px', color: '#8b9ab0', fontFamily: 'sans-serif' }}>YOUR LOGO</span>
+                }
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '32px', fontStyle: 'italic', color: '#1a1a2e', lineHeight: 1.1 }}>
@@ -105,34 +127,57 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
+
               {/* Day-of details */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Day-Of Details</div>
-                {([
-                  ['Package', booking.packageName ?? '—'],
-                  ['Hours of Coverage', booking.hoursCovered ? booking.hoursCovered + 'h' : '—'],
-                ] as [string, string][]).map(([label, value]) => (
-                  <div key={label} style={{ marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+                {[
+                  ['Lead Photographer', leadName],
+                  ['Second Photographer', dayOf.secondShooterName],
+                  ['Coverage', booking.hoursCovered ? `${booking.hoursCovered} hours${dayOf.coverageStart ? ` (${dayOf.coverageStart}` : ''}${dayOf.coverageEnd ? `–${dayOf.coverageEnd})` : (dayOf.coverageStart ? ')' : '')}` : null],
+                  ['Package', booking.packageName],
+                  ['Guest Count', dayOf.guestCount],
+                  ['Wedding Party', dayOf.weddingParty],
+                  ['Dress Code', dayOf.dressCode],
+                  ['Most Important Photos', dayOf.mostImportantPhotos],
+                  ['Ceremony Restrictions', dayOf.ceremonyRestrictions],
+                  ['Notes', booking.notes],
+                ].filter(([, v]) => v).map(([label, value]) => (
+                  <div key={label as string} style={{ marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>
                     <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{label}: </span>
                     <span style={{ color: '#444' }}>{value}</span>
                   </div>
                 ))}
-                {booking.notes && (
-                  <div style={{ marginTop: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
-                    <span style={{ fontWeight: 600, color: '#1a1a2e' }}>Notes: </span>
-                    <span style={{ color: '#444' }}>{booking.notes}</span>
+                {((booking as any).addOns ?? []).length > 0 && (
+                  <div style={{ marginTop: '4px' }}>
+                    <div style={{ fontWeight: 600, color: '#1a1a2e', fontSize: '11px', marginBottom: '3px' }}>Add-ons:</div>
+                    {((booking as any).addOns ?? []).map((ao: any, i: number) => (
+                      <div key={i} style={{ marginBottom: '4px', fontFamily: 'sans-serif', fontSize: '11px', color: '#444', paddingLeft: '8px' }}>
+                        · {ao.name}{ao.notes ? ` — ${ao.notes}` : ''}
+                      </div>
+                    ))}
                   </div>
                 )}
+
               </div>
 
               {/* Location details */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Location Details</div>
-                {([
+                {[
                   ['Venue', booking.venueName],
                   ['Address', booking.venueAddress],
-                ] as [string, string | undefined][]).filter(([, v]) => v).map(([label, value]) => (
-                  <div key={label} style={{ marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+                  [booking.partnerOneName + ' Prep', dayOf.brideGettingReadyLocation],
+                  [booking.partnerTwoName + ' Prep', dayOf.groomGettingReadyLocation],
+                  ['First Look', dayOf.firstLookLocation],
+                  ['Portraits', dayOf.portraitsLocation],
+                  ['Ceremony', dayOf.ceremonyLocation],
+                  ['Cocktail Hour', dayOf.cocktailHourLocation],
+                  ['Sunset Photos', dayOf.sunsetPhotosLocation],
+                  ['Reception', dayOf.receptionNotes],
+                  ['Parking', dayOf.parkingNotes],
+                ].filter(([, v]) => v).map(([label, value]) => (
+                  <div key={label as string} style={{ marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>
                     <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{label}: </span>
                     <span style={{ color: '#444' }}>{value}</span>
                   </div>
@@ -141,18 +186,50 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
 
               {/* Contact info */}
               <div>
-                <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Contact Info</div>
-                <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px' }}>Photographers</div>
-                {booking.vendors.filter(v => ['Photographer', 'Second shooter', 'Second Shooter'].includes(v.role)).map(v => (
-                  <div key={v.id} style={{ marginBottom: '4px', fontFamily: 'sans-serif', fontSize: '11px', color: '#444' }}>
-                    <strong style={{ color: '#1a1a2e' }}>{v.name}:</strong> {v.phone ?? v.email ?? ''}
+                <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Contact Information</div>
+                {dayOf.coordinatorName && (
+                  <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+                    <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Coordinator</div>
+                    <div style={{ color: '#444' }}>{dayOf.coordinatorName}{dayOf.coordinatorPhone ? `: ${dayOf.coordinatorPhone}` : ''}</div>
                   </div>
-                ))}
-                {vendors.filter(v => ['Videographer', 'DJ', 'DJ/Band', 'Planner', 'Florist'].includes(v.role)).map((v, i) => (
-                  <div key={i} style={{ marginBottom: '4px', fontFamily: 'sans-serif', fontSize: '11px', color: '#444' }}>
-                    <strong style={{ color: '#1a1a2e' }}>{v.name} ({v.role}):</strong> {v.phone ?? v.email ?? ''}
+                )}
+                <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+                  <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Photographers</div>
+                  <div style={{ color: '#444' }}>{leadName} (Lead){leadPhone ? `: ${leadPhone}` : ''}</div>
+                  {dayOf.secondShooterName && (
+                    <div style={{ color: '#444' }}>{dayOf.secondShooterName} (Second){dayOf.secondShooterPhone ? `: ${dayOf.secondShooterPhone}` : ''}</div>
+                  )}
+                </div>
+                {dayOf.alternateContactsPartnerOne?.length > 0 && (
+                  <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+                    <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Alternate contacts for {booking.partnerOneName}</div>
+                    {dayOf.alternateContactsPartnerOne.map((c: any, i: number) => (
+                      <div key={i} style={{ color: '#444', marginBottom: '2px' }}>
+                        <strong style={{ color: '#1a1a2e' }}>{c.name}{c.role ? ` (${c.role})` : ''}</strong>{c.phone ? `: ${c.phone}` : ''}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+                {dayOf.alternateContactsPartnerTwo?.length > 0 && (
+                  <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+                    <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Alternate contacts for {booking.partnerTwoName}</div>
+                    {dayOf.alternateContactsPartnerTwo.map((c: any, i: number) => (
+                      <div key={i} style={{ color: '#444', marginBottom: '2px' }}>
+                        <strong style={{ color: '#1a1a2e' }}>{c.name}{c.role ? ` (${c.role})` : ''}</strong>{c.phone ? `: ${c.phone}` : ''}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {booking.vendors.filter(v => !['Photographer', 'Second shooter', 'Second Shooter'].includes(v.role)).length > 0 && (
+                  <div style={{ fontFamily: 'sans-serif', fontSize: '11px' }}>
+                    <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Other Vendors</div>
+                    {booking.vendors.filter(v => !['Photographer', 'Second shooter', 'Second Shooter'].includes(v.role)).map(v => (
+                      <div key={v.id} style={{ marginBottom: '2px', color: '#444' }}>
+                        <strong style={{ color: '#1a1a2e' }}>{v.name} ({v.role})</strong>{v.phone ? `: ${v.phone}` : v.email ? `: ${v.email}` : ''}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -190,7 +267,7 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
                       <tr style={{ borderBottom: '1px solid #f4f4f4', background: isGolden ? '#fdf8e8' : 'transparent' }}>
                         <td style={{ padding: '7px 8px 7px 0', fontWeight: 500, color: isGolden ? '#b8891a' : '#333', verticalAlign: 'top' }}>{row.time}</td>
                         <td style={{ padding: '7px 16px 7px 0', color: isGolden ? '#b8891a' : '#1a1a2e', fontWeight: isGolden ? 600 : 400, verticalAlign: 'top' }}>{row.label}</td>
-                        <td style={{ padding: '7px 0', color: '#777', verticalAlign: 'top' }}></td>
+                        <td style={{ padding: '7px 0', color: '#777', verticalAlign: 'top', fontSize: '11px' }}>{row.notes}</td>
                       </tr>
                     </React.Fragment>
                   )
@@ -206,58 +283,25 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
               {booking.partnerOneName} & {booking.partnerTwoName} · {formatDate(booking.weddingDate)}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-              <div>
-                <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
-                  Family Shot List
-                </div>
-                {booking.shotListGroups.filter(g => g.name.toLowerCase().includes('family')).flatMap(g => g.items).map((item, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '5px', fontFamily: 'sans-serif', fontSize: '11px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '11px', height: '11px', border: '1px solid #ccc', borderRadius: '2px', flexShrink: 0, marginTop: '1px' }} />
-                    <span style={{ color: '#333' }}>{item.description}</span>
-                  </div>
-                ))}
-
-              </div>
-
-              <div>
-                <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
-                  Getting Ready
-                </div>
-                {[
-                  'Makeup application / hair styling',
-                  'Bridal accessories (shoes, veil, perfume, jewelry)',
-                  'Flat lay of accessories',
-                  'Flat lay of invitation suite',
-                  'Bridal party photos in suite',
-                  "Groom's details (shoes, tie, watch, cologne, cufflinks)",
-                  "Groom's flat lay",
-                ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px', fontFamily: 'sans-serif', fontSize: '11px', alignItems: 'center' }}>
-                    <div style={{ width: '11px', height: '11px', border: '1px solid #ccc', borderRadius: '2px', flexShrink: 0 }} />
-                    <span style={{ color: '#333' }}>{item}</span>
-                  </div>
-                ))}
-                {booking.shotListGroups.filter(g => !g.name.toLowerCase().includes('family')).length > 0 && (
-                  <>
-                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginTop: '20px', marginBottom: '10px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
-                      Additional Groups
+            {booking.shotListGroups.length === 0 ? (
+              <p style={{ fontFamily: 'sans-serif', fontSize: '12px', color: '#aaa', fontStyle: 'italic' }}>No shot list added yet.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+                {booking.shotListGroups.map(group => (
+                  <div key={group.id} style={{ marginBottom: '16px' }}>
+                    <div style={{ fontFamily: 'Georgia, serif', fontSize: '14px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '8px', borderBottom: '1px solid #e0e0e0', paddingBottom: '5px' }}>
+                      {group.name}
                     </div>
-                    {booking.shotListGroups.filter(g => !g.name.toLowerCase().includes('family')).map(group => (
-                      <div key={group.id} style={{ marginBottom: '10px' }}>
-                        <div style={{ fontFamily: 'sans-serif', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#999', marginBottom: '4px' }}>{group.name}</div>
-                        {group.items.map((item, i) => (
-                          <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '4px', fontFamily: 'sans-serif', fontSize: '11px', alignItems: 'center' }}>
-                            <div style={{ width: '11px', height: '11px', border: '1px solid #ccc', borderRadius: '2px', flexShrink: 0 }} />
-                            <span style={{ color: '#333' }}>{item.description}</span>
-                          </div>
-                        ))}
+                    {group.items.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '5px', fontFamily: 'sans-serif', fontSize: '11px', alignItems: 'flex-start' }}>
+                        <div style={{ width: '11px', height: '11px', border: '1px solid #ccc', borderRadius: '2px', flexShrink: 0, marginTop: '1px' }} />
+                        <span style={{ color: '#333' }}>{item.description}</span>
                       </div>
                     ))}
-                  </>
-                )}
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
           {/* ── PAGE 4: NOTES ─────────────────────────────────────── */}
@@ -278,6 +322,11 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
 
             <div style={{ marginTop: '24px' }}>
               <div style={{ fontFamily: 'Georgia, serif', fontSize: '15px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px' }}>Day-of notes</div>
+              {dayOf.dayOfNotes && (
+                <div style={{ fontFamily: 'sans-serif', fontSize: '11px', color: '#444', lineHeight: '1.7', marginBottom: '16px', padding: '10px 14px', background: '#faf9f7', borderRadius: '4px', border: '1px solid #e8e4de' }}>
+                  {dayOf.dayOfNotes}
+                </div>
+              )}
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} style={{ borderBottom: '1px solid #e8e8e8', height: '28px', marginBottom: '4px' }} />
               ))}
@@ -285,7 +334,7 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
 
             <div style={{ marginTop: '32px', paddingTop: '12px', borderTop: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', fontFamily: 'sans-serif', fontSize: '9px', color: '#bbb' }}>
               <span>Dossier · Day-of sheet</span>
-              <span>Caitee Smith Photography</span>
+              <span>{photographer?.businessName ?? photographer ? `${photographer.firstName ?? ''} ${photographer.lastName ?? ''}`.trim() : 'Caitee Smith Photography'}</span>
               <span>Generated {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
             </div>
           </div>

@@ -66,6 +66,9 @@ public class PortalController(DossierDbContext db) : ControllerBase
             booking.PackagePrice,
             booking.HoursCovered,
             booking.Notes,
+            AddOns = string.IsNullOrEmpty(booking.AddOns) || booking.AddOns == "[]"
+                ? null
+                : JsonSerializer.Deserialize<object>(booking.AddOns),
             PortalToken              = booking.PortalToken.ToString(),
             booking.PortalEnabled,
             Status                   = booking.Status.ToString().ToLower(),
@@ -86,6 +89,7 @@ public class PortalController(DossierDbContext db) : ControllerBase
                 photographer.Website,
                 photographer.Instagram,
                 photographer.GalleryDeliveryWeeks,
+                photographer.GalleryDeliveryWeeksMax,
             },
         });
     }

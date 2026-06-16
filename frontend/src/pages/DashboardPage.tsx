@@ -131,7 +131,7 @@ export default function DashboardPage() {
                     </div>
                   )}
                   <div className="pt-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>
-                    <WeatherWidget booking={nextWedding} compact />
+                    <WeatherWidget booking={allDetails[nextWedding.id] ?? nextWedding} compact />
                   </div>
                 </Card>
               </Link>
@@ -181,8 +181,9 @@ export default function DashboardPage() {
                       <p className="text-sm font-medium" style={{ color: 'var(--color-navy-800)' }}>{lead.firstName} {lead.lastName}</p>
                       <Badge status={lead.status} />
                     </div>
-                    {lead.weddingDate && <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>{formatDate(lead.weddingDate)}</p>}
-                  </div>
+                    {lead.weddingDate && <p className="text-xs mt-0.5" style={{ color: 'var(--color-navy-400)' }}>💍 {formatDate(lead.weddingDate)}</p>}
+                    <p className="text-xs" style={{ color: 'var(--color-navy-300)' }}>Inquired {formatDate(lead.inquiryDate)}</p>
+                    </div>
                 ))}
               </div>
               <div className="px-4 py-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>

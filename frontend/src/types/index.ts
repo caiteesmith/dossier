@@ -74,6 +74,9 @@ export interface Booking {
   portalEnabled: boolean
   notes?: string
   workflowStatus?: string
+  addOns?: { name: string; price: string; notes: string }[]
+  galleryStageIndex?: number
+  galleryStages?: string
   createdAt: string
   updatedAt: string
   projectId?: string
@@ -171,5 +174,6 @@ export interface BookingDetail extends Booking {
     website?: string
     instagram?: string
     galleryDeliveryWeeks?: number
+    galleryDeliveryWeeksMax?: number
   }
 }

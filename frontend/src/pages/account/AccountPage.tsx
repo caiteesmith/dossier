@@ -94,6 +94,7 @@ function ProfileTab() {
     businessName: '',
     website:      '',
     timezone:     'America/New_York',
+    logoUrl:      '',
     nickname:     localStorage.getItem('dossier_nickname') ?? '',
   })
   const [saved, setSaved] = useState(false)
@@ -107,6 +108,7 @@ function ProfileTab() {
       businessName: data.businessName ?? '',
       website:      data.website ?? '',
       timezone:     data.timezone ?? 'America/New_York',
+      logoUrl:      data.logoUrl ?? '',
       nickname:     localStorage.getItem('dossier_nickname') ?? data.firstName ?? '',
     })
   }, [data])
@@ -120,6 +122,7 @@ function ProfileTab() {
         businessName: form.businessName || null,
         website:      form.website || null,
         timezone:     form.timezone,
+        logoUrl:      form.logoUrl || null,
       })
       localStorage.setItem('dossier_nickname', form.nickname)
       setSaved(true)
@@ -170,23 +173,32 @@ function ProfileTab() {
 
       <Card className="p-6 space-y-4">
         <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-navy-700)' }}>Logo</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
           <div style={{
-            width: '64px', height: '64px', borderRadius: '10px',
+            width: '64px', height: '64px', borderRadius: '10px', overflow: 'hidden',
             background: 'var(--color-navy-900)', display: 'flex',
             alignItems: 'center', justifyContent: 'center',
             fontSize: '18px', fontWeight: 700, color: 'var(--color-gold-warm)',
             flexShrink: 0,
           }}>
-            {(form.firstName[0] ?? '') + (form.lastName[0] ?? '')}
+            {form.logoUrl
+              ? <img src={form.logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              : (form.firstName[0] ?? '') + (form.lastName[0] ?? '')
+            }
           </div>
           <div style={{ flex: 1 }}>
-            <Button variant="secondary" size="sm">Upload logo</Button>
-            <p style={{ fontSize: '11px', color: 'var(--color-navy-400)', marginTop: '5px' }}>
-              PNG or SVG, recommended 400×400px. Used on the client portal and day-of sheet.
+            <p style={{ fontSize: '12px', color: 'var(--color-navy-400)' }}>
+              Paste a URL to your logo below. Used on the client portal and day-of sheet.
             </p>
           </div>
         </div>
+        <Field
+          label="Logo URL"
+          value={form.logoUrl}
+          onChange={v => setForm(p => ({ ...p, logoUrl: v }))}
+          placeholder="https://yoursite.com/logo.png"
+          hint="PNG, SVG, or WebP. Recommended 400×400px or wider."
+        />
       </Card>
 
       <Button onClick={handleSave} disabled={saving}>
@@ -207,7 +219,8 @@ function BrandingTab() {
     businessAddress:        '',
     calendlyUrl:            '',
     portalSignoff:          '',
-    galleryDeliveryWeeks:   '8',
+    galleryDeliveryWeeks:    '6',
+    galleryDeliveryWeeksMax: '8',
   })
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -221,7 +234,8 @@ function BrandingTab() {
       businessAddress:      data.businessAddress ?? '',
       calendlyUrl:          data.calendlyUrl ?? '',
       portalSignoff:        data.portalSignoff ?? '',
-      galleryDeliveryWeeks: data.galleryDeliveryWeeks ? String(data.galleryDeliveryWeeks) : '8',
+      galleryDeliveryWeeks:    data.galleryDeliveryWeeks    ? String(data.galleryDeliveryWeeks)    : '6',
+      galleryDeliveryWeeksMax: data.galleryDeliveryWeeksMax ? String(data.galleryDeliveryWeeksMax) : '8',
     })
   }, [data])
 
@@ -234,7 +248,8 @@ function BrandingTab() {
         businessAddress: form.businessAddress || null,
         calendlyUrl:     form.calendlyUrl || null,
         portalSignoff:          form.portalSignoff || null,
-        galleryDeliveryWeeks:   form.galleryDeliveryWeeks ? parseInt(form.galleryDeliveryWeeks) : 8,
+        galleryDeliveryWeeks:    form.galleryDeliveryWeeks    ? parseInt(form.galleryDeliveryWeeks)    : 6,
+        galleryDeliveryWeeksMax: form.galleryDeliveryWeeksMax ? parseInt(form.galleryDeliveryWeeksMax) : 8,
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -262,14 +277,25 @@ function BrandingTab() {
 
       <Card className="p-6 space-y-4">
         <h3 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-navy-700)' }}>Delivery</h3>
-        <Field
-          label="Gallery delivery (weeks after wedding)"
-          value={form.galleryDeliveryWeeks}
-          onChange={v => setForm(p => ({ ...p, galleryDeliveryWeeks: v }))}
-          placeholder="8"
-          type="number"
-          hint="Shown to clients on their portal as an estimated delivery date."
-        />
+        <p style={{ fontSize: '12px', color: 'var(--color-navy-400)', lineHeight: '1.5' }}>
+          Shown to clients as a range, e.g. "6–8 weeks after your wedding".
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <Field
+            label="Minimum weeks"
+            value={form.galleryDeliveryWeeks}
+            onChange={v => setForm(p => ({ ...p, galleryDeliveryWeeks: v }))}
+            placeholder="6"
+            type="number"
+          />
+          <Field
+            label="Maximum weeks"
+            value={form.galleryDeliveryWeeksMax}
+            onChange={v => setForm(p => ({ ...p, galleryDeliveryWeeksMax: v }))}
+            placeholder="8"
+            type="number"
+          />
+        </div>
       </Card>
 
       <Card className="p-6 space-y-4">

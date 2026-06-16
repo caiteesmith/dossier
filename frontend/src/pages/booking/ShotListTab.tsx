@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Card, Button } from '@/components/ui'
-import { useDeleteShotGroup, useDeleteShotItem } from '@/hooks/useData'
+import { useDeleteShotGroup, useDeleteShotItem, useAddShotItem, useUpdateShotItem } from '@/hooks/useData'
 import type { ShotListGroup, ShotListItem } from '@/types'
 
 function TrashIcon() {
@@ -40,11 +40,43 @@ function ShotItemContent({
   isDragging: boolean
 }) {
   const deleteItem = useDeleteShotItem()
+  const updateItem = useUpdateShotItem()
+  const [editing, setEditing] = useState(false)
+  const [editVal, setEditVal] = useState(item.description)
 
   function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
     if (!confirm(`Delete "${item.description}"?`)) return
     deleteItem.mutate({ bookingId, groupId: item.groupId, itemId: item.id })
+  }
+
+  function handleEditCommit() {
+    if (editVal.trim() && editVal.trim() !== item.description) {
+      updateItem.mutate({ bookingId, groupId: item.groupId, itemId: item.id, description: editVal.trim() })
+    }
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2 px-5 py-2" style={{ background: 'var(--color-navy-50)' }}
+        onPointerDown={e => e.stopPropagation()}>
+        <input
+          value={editVal}
+          onChange={e => setEditVal(e.target.value)}
+          onBlur={handleEditCommit}
+          onKeyDown={e => { if (e.key === 'Enter') handleEditCommit(); if (e.key === 'Escape') setEditing(false) }}
+          autoFocus
+          style={{
+            flex: 1, fontSize: '13px', border: 'none', borderBottom: '1px solid var(--color-navy-300)',
+            outline: 'none', background: 'transparent', fontFamily: 'inherit',
+            color: 'var(--color-navy-800)', padding: '4px 0',
+          }}
+        />
+        <button onClick={handleEditCommit} style={{ fontSize: '11px', color: 'var(--color-steel-500)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Save</button>
+        <button onClick={() => setEditing(false)} style={{ fontSize: '11px', color: 'var(--color-navy-400)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+      </div>
+    )
   }
 
   return (
@@ -64,24 +96,39 @@ function ShotItemContent({
         onClick={e => e.stopPropagation()}
         className="w-4 h-4 rounded shrink-0"
       />
-      <span className="text-sm flex-1" style={{
-        color: item.completed ? 'var(--color-navy-400)' : 'var(--color-navy-700)',
-        textDecoration: item.completed ? 'line-through' : 'none',
-      }}>
+      <span
+        className="text-sm flex-1"
+        onDoubleClick={e => { e.stopPropagation(); setEditing(true); setEditVal(item.description) }}
+        style={{
+          color: item.completed ? 'var(--color-navy-400)' : 'var(--color-navy-700)',
+          textDecoration: item.completed ? 'line-through' : 'none',
+        }}
+      >
         {item.description}
       </span>
       {item.notes && (
         <span className="text-xs italic shrink-0" style={{ color: 'var(--color-navy-400)' }}>{item.notes}</span>
       )}
-      <button
-        onClick={handleDelete}
-        onPointerDown={e => e.stopPropagation()}
-        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-50"
-        style={{ color: 'var(--color-navy-300)' }}
-        title="Delete shot"
-      >
-        <TrashIcon />
-      </button>
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <button
+          onClick={e => { e.stopPropagation(); setEditing(true); setEditVal(item.description) }}
+          onPointerDown={e => e.stopPropagation()}
+          className="p-1 rounded text-xs hover:bg-gray-50"
+          style={{ color: 'var(--color-navy-400)' }}
+          title="Edit shot"
+        >
+          Edit
+        </button>
+        <button
+          onClick={handleDelete}
+          onPointerDown={e => e.stopPropagation()}
+          className="p-1 rounded hover:bg-red-50"
+          style={{ color: 'var(--color-navy-300)' }}
+          title="Delete shot"
+        >
+          <TrashIcon />
+        </button>
+      </div>
     </div>
   )
 }
@@ -118,11 +165,21 @@ function ShotGroup({
   isOver: boolean
 }) {
   const deleteGroup = useDeleteShotGroup()
+  const addItem = useAddShotItem()
+  const [showAddItem, setShowAddItem] = useState(false)
+  const [newItemVal, setNewItemVal] = useState('')
 
   function handleDeleteGroup(e: React.MouseEvent) {
     e.stopPropagation()
     if (!confirm(`Delete group "${group.name}" and all its shots?`)) return
     deleteGroup.mutate({ bookingId, groupId: group.id })
+  }
+
+  function handleAddItem() {
+    if (!newItemVal.trim()) return
+    addItem.mutate({ bookingId, groupId: group.id, description: newItemVal.trim() }, {
+      onSuccess: () => { setNewItemVal(''); setShowAddItem(false) }
+    })
   }
 
   return (
@@ -131,14 +188,23 @@ function ShotGroup({
         <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>
           {group.name}
         </h3>
-        <button
-          onClick={handleDeleteGroup}
-          className="p-1 rounded opacity-40 hover:opacity-100 hover:bg-red-50 transition-opacity"
-          style={{ color: 'var(--color-navy-400)' }}
-          title="Delete group"
-        >
-          <TrashIcon />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAddItem(s => !s)}
+            className="text-xs opacity-40 hover:opacity-100 transition-opacity px-2 py-1 rounded hover:bg-gray-50"
+            style={{ color: 'var(--color-navy-500)', fontFamily: 'inherit' }}
+          >
+            + Add shot
+          </button>
+          <button
+            onClick={handleDeleteGroup}
+            className="p-1 rounded opacity-40 hover:opacity-100 hover:bg-red-50 transition-opacity"
+            style={{ color: 'var(--color-navy-400)' }}
+            title="Delete group"
+          >
+            <TrashIcon />
+          </button>
+        </div>
       </div>
       <Card>
         <div
@@ -161,6 +227,30 @@ function ShotGroup({
             )}
           </SortableContext>
         </div>
+        {showAddItem && (
+          <div className="flex items-center gap-2 px-4 py-2 border-t" style={{ borderColor: 'var(--color-navy-100)', background: 'var(--color-navy-50)' }}>
+            <input
+              value={newItemVal}
+              onChange={e => setNewItemVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleAddItem(); if (e.key === 'Escape') setShowAddItem(false) }}
+              placeholder="Shot description..."
+              autoFocus
+              style={{
+                flex: 1, fontSize: '13px', border: 'none', borderBottom: '1px solid var(--color-navy-300)',
+                outline: 'none', background: 'transparent', fontFamily: 'inherit',
+                color: 'var(--color-navy-800)', padding: '4px 0',
+              }}
+            />
+            <button
+              onClick={handleAddItem}
+              disabled={addItem.isPending || !newItemVal.trim()}
+              style={{ fontSize: '12px', fontWeight: 600, color: 'white', background: 'var(--color-navy-800)', border: 'none', borderRadius: '6px', padding: '4px 12px', cursor: 'pointer', fontFamily: 'inherit' }}
+            >
+              {addItem.isPending ? '...' : 'Add'}
+            </button>
+            <button onClick={() => setShowAddItem(false)} style={{ fontSize: '12px', color: 'var(--color-navy-400)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+          </div>
+        )}
       </Card>
     </div>
   )
@@ -169,12 +259,14 @@ function ShotGroup({
 interface ShotListTabProps {
   bookingId: string
   initialGroups: ShotListGroup[]
+  onAddGroup?: () => void
 }
 
-export default function ShotListTab({ bookingId, initialGroups }: ShotListTabProps) {
+export default function ShotListTab({ bookingId, initialGroups, onAddGroup }: ShotListTabProps) {
   // draggingGroups is only non-null while a drag is in progress.
   // Otherwise we fall through to initialGroups (the live TanStack Query data),
   // so newly added groups appear without a refresh.
+  const updateItemOrder = useUpdateShotItem()
   const [draggingGroups, setDraggingGroups] = useState<ShotListGroup[] | null>(null)
   const [activeItemId, setActiveItemId] = useState<UniqueIdentifier | null>(null)
   const [overGroupId, setOverGroupId] = useState<string | null>(null)
@@ -250,10 +342,41 @@ export default function ShotListTab({ bookingId, initialGroups }: ShotListTabPro
   }
 
   function handleDragEnd(_event: DragEndEvent) {
-    // Drop back to live data — TanStack Query will reflect the persisted order
-    setDraggingGroups(null)
-    setActiveItemId(null)
-    setOverGroupId(null)
+    if (draggingGroups) {
+      const mutations: Promise<any>[] = []
+
+      draggingGroups.forEach(group => {
+        group.items.forEach((item, idx) => {
+          const originalGroup = initialGroups.find(g => g.items.some(i => i.id === item.id))
+          const originalIdx = originalGroup?.items.findIndex(i => i.id === item.id) ?? -1
+          const movedGroup = originalGroup?.id !== group.id
+          const movedPosition = originalIdx !== idx
+
+          if (movedGroup || movedPosition) {
+            mutations.push(
+              updateItemOrder.mutateAsync({
+                bookingId,
+                groupId: group.id,
+                itemId: item.id,
+                sortOrder: idx,
+                ...(movedGroup && { newGroupId: group.id }),
+              })
+            )
+          }
+        })
+      })
+
+      // Only clear draggingGroups after all saves complete so UI doesn't snap back
+      Promise.all(mutations).finally(() => {
+        setDraggingGroups(null)
+        setActiveItemId(null)
+        setOverGroupId(null)
+      })
+    } else {
+      setDraggingGroups(null)
+      setActiveItemId(null)
+      setOverGroupId(null)
+    }
   }
 
   function handleDragCancel() {
@@ -269,7 +392,7 @@ export default function ShotListTab({ bookingId, initialGroups }: ShotListTabPro
     return (
       <div className="text-center py-16">
         <p className="font-display italic text-lg" style={{ color: 'var(--color-navy-400)' }}>No shot list yet</p>
-        <Button className="mt-4" size="sm">+ Add group</Button>
+        <Button className="mt-4" size="sm" onClick={onAddGroup}>+ Add group</Button>
       </div>
     )
   }
@@ -298,7 +421,7 @@ export default function ShotListTab({ bookingId, initialGroups }: ShotListTabPro
       </DndContext>
 
       <div className="mt-4">
-        <Button variant="secondary" size="sm">+ Add group</Button>
+        <Button variant="secondary" size="sm" onClick={onAddGroup}>+ Add group</Button>
       </div>
     </div>
   )

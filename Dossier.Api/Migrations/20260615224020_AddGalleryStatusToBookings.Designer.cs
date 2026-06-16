@@ -3,6 +3,7 @@ using System;
 using Dossier.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Dossier.Api.Migrations
 {
     [DbContext(typeof(DossierDbContext))]
-    partial class DossierDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615224020_AddGalleryStatusToBookings")]
+    partial class AddGalleryStatusToBookings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,19 +32,9 @@ namespace Dossier.Api.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("AddOns")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("add_ons");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
-
-                    b.Property<string>("DayOfDetails")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("day_of_details");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -345,14 +338,6 @@ namespace Dossier.Api.Migrations
                     b.Property<int>("GalleryDeliveryWeeks")
                         .HasColumnType("integer")
                         .HasColumnName("gallery_delivery_weeks");
-
-                    b.Property<int>("GalleryDeliveryWeeksMax")
-                        .HasColumnType("integer")
-                        .HasColumnName("gallery_delivery_weeks_max");
-
-                    b.Property<string>("HeadshotUrl")
-                        .HasColumnType("text")
-                        .HasColumnName("headshot_url");
 
                     b.Property<string>("Instagram")
                         .HasColumnType("text")

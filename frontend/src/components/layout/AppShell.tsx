@@ -6,7 +6,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen">
       <Sidebar />
       <main
-        style={{ marginLeft: 'var(--sidebar-width)' }}
+        style={{ marginLeft: '300px' }}
         className="flex-1 min-h-screen overflow-y-auto"
       >
         {children}

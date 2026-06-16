@@ -1,4 +1,5 @@
 import type { BookingDetail } from '@/types'
+import { GalleryTrackerCard } from '@/components/booking/GalleryTracker'
 
 interface Props {
   booking: BookingDetail
@@ -151,6 +152,17 @@ export default function PortalDashboard({ booking, onNavigate }: Props) {
               </div>
             )}
           </div>
+          {((booking as any).addOns ?? []).length > 0 && (
+            <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #f0ede8' }}>
+              <p style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#aaa', marginBottom: '8px' }}>Add-ons</p>
+              {((booking as any).addOns ?? []).map((ao: any, i: number) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '13px' }}>
+                  <span style={{ color: '#1a1a2e' }}>{ao.name}{ao.notes ? <span style={{ color: '#aaa', fontSize: '12px' }}> · {ao.notes}</span> : ''}</span>
+                  {ao.price && <span style={{ fontWeight: 500, color: '#1a1a2e' }}>${Number(ao.price).toLocaleString()}</span>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -288,8 +300,8 @@ export default function PortalDashboard({ booking, onNavigate }: Props) {
             {
               icon: '🖼️',
               label: 'Gallery delivery',
-              detail: `${booking.photographer?.galleryDeliveryWeeks ?? 8} weeks after your wedding`,
-              date: addDays(booking.weddingDate, (booking.photographer?.galleryDeliveryWeeks ?? 8) * 7),
+              detail: `${booking.photographer?.galleryDeliveryWeeks ?? 6}–${booking.photographer?.galleryDeliveryWeeksMax ?? 8} weeks after your wedding`,
+              date: addDays(booking.weddingDate, (booking.photographer?.galleryDeliveryWeeksMax ?? 8) * 7),
               action: null,
               actionLabel: null,
             },
@@ -311,6 +323,18 @@ export default function PortalDashboard({ booking, onNavigate }: Props) {
           ))}
         </div>
       </div>
+
+      {/* ── Gallery editing tracker ──────────────────────────── */}
+      {(booking.galleryStageIndex !== undefined && booking.galleryStageIndex !== null) && (
+        <GalleryTrackerCard
+          galleryStageIndex={booking.galleryStageIndex ?? 0}
+          galleryStages={booking.galleryStages}
+          galleryDeliveryWeeks={booking.photographer?.galleryDeliveryWeeks}
+          galleryDeliveryWeeksMax={booking.photographer?.galleryDeliveryWeeksMax}
+          weddingDate={booking.weddingDate}
+          onNavigate={() => onNavigate('documents')}
+        />
+      )}
 
       {/* ── Questionnaire CTA ────────────────────────────────────── */}
       <div style={{
