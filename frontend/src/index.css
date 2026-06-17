@@ -44,6 +44,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html {
+  font-size: 110%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

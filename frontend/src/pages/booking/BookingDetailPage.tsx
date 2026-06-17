@@ -91,12 +91,12 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'tasks',    label: 'Tasks' },
   { id: 'sessions', label: 'Sessions' },
   { id: 'calls',    label: 'Calls' },
-  { id: 'timeline', label: 'Timeline' },
-  { id: 'shotlist', label: 'Shot list' },
-  { id: 'vendors',  label: 'Vendors' },
   { id: 'questionnaire', label: 'Questionnaire' },
-  { id: 'dayof',        label: 'Day of' },
-  { id: 'blog',     label: 'Blog post' },
+  { id: 'dayof',        label: 'Day Of' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'shotlist', label: 'Shot List' },
+  { id: 'vendors',  label: 'Vendors' },
+  // { id: 'blog',     label: 'Blog Post' },
 ]
 
 function Row({ label, value }: { label: string; value: string }) {
