@@ -207,8 +207,8 @@ function BlockForm({ initial, knownLocations, defaultLocation, onSave, onCancel,
             title: title.trim(),
             startTime,
             durationMinutes: parseInt(duration) || 60,
-            location: location.trim() || undefined,
-            notes: notes.trim() || undefined,
+            location: location.trim(),
+            notes: notes.trim(),
           })
         }} disabled={!title.trim() || !startTime || saving}>
           {saving ? 'Saving…' : 'Save block'}
