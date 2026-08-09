@@ -23,6 +23,26 @@ export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
 export type TaskCategory = 'admin' | 'client' | 'day_of' | 'post_wedding' | 'manual'
 
 // ── Core entities ─────────────────────────────────────────────────
+export interface Photographer {
+  id: string
+  firstName: string
+  lastName: string
+  businessName?: string
+  email: string
+  phone?: string
+  website?: string
+  instagram?: string
+  calendlyUrl?: string
+  timezone: string
+  businessAddress?: string
+  logoUrl?: string
+  headshotUrl?: string
+  portalSignoff?: string
+  galleryDeliveryWeeks: number
+  galleryDeliveryWeeksMax: number
+  createdAt: string
+  updatedAt: string
+}
 
 export interface Lead {
   id: string

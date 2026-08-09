@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { usePhotographer } from '@/hooks/useData'
 
 const NAV = [
   { label: 'Dashboard', to: '/dashboard', icon: '◈' },
@@ -31,6 +32,7 @@ const HELP_ITEMS = [
 export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { data: photographer } = usePhotographer()
 
   const onStudio = location.pathname.startsWith('/studio')
   const onTools  = location.pathname.startsWith('/tools')
@@ -101,8 +103,10 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-6 pt-8 pb-10">
         <span className="font-display text-xl tracking-wide italic" style={{ color: 'white' }}>Dossier</span>
-        <p className="text-[11px] mt-0.5 tracking-widest uppercase" style={{ color: 'var(--color-navy-400)' }}>Wedding Studio</p>
-      </div>
+          <p className="text-[11px] mt-0.5 tracking-widest uppercase" style={{ color: 'var(--color-navy-400)' }}>
+            {photographer?.businessName || 'Wedding Studio'}
+          </p>      
+        </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto pb-4">

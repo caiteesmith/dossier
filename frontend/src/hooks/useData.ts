@@ -1,6 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { Lead, Booking, BookingDetail, TaskCategory } from '@/types'
+import type { Lead, Booking, BookingDetail, TaskCategory, Photographer } from '@/types'
+
+// ── Photographer ─────────────────────────────────────────────────────────
+
+export function usePhotographer() {
+  return useQuery<Photographer>({
+    queryKey: ['photographer'],
+    queryFn: () => api.get('/api/photographer/me').then(r => r.data),
+  })
+}
+
+export function useUpdatePhotographer() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<Photographer>) =>
+      api.patch('/api/photographer/me', data).then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['photographer'] }),
+  })
+}
 
 // ── Leads ─────────────────────────────────────────────────────────
 
