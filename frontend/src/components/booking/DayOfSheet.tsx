@@ -119,11 +119,15 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
             </div>
 
             <div style={{ width: '100%', height: '280px', background: '#e8ecf4', borderRadius: '10px', marginBottom: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <div style={{ textAlign: 'center', color: '#8b9ab0', fontFamily: 'sans-serif' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px', opacity: 0.4 }}>📷</div>
-                <div style={{ fontSize: '12px' }}>Engagement photo</div>
-                <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Upload a photo to display here</div>
-              </div>
+              {booking.couplePhotoUrl ? (
+                <img src={booking.couplePhotoUrl} alt="Couple" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ textAlign: 'center', color: '#8b9ab0', fontFamily: 'sans-serif' }}>
+                  <div style={{ fontSize: '32px', marginBottom: '8px', opacity: 0.4 }}>📷</div>
+                  <div style={{ fontSize: '12px' }}>Couple photo</div>
+                  <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Upload a photo to display here</div>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' }}>
@@ -187,12 +191,6 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
               {/* Contact info */}
               <div>
                 <div style={{ fontFamily: 'Georgia, serif', fontSize: '16px', fontStyle: 'italic', color: '#1a1a2e', marginBottom: '12px', borderBottom: '1px solid #e0e0e0', paddingBottom: '6px' }}>Contact Information</div>
-                {dayOf.coordinatorName && (
-                  <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
-                    <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Coordinator</div>
-                    <div style={{ color: '#444' }}>{dayOf.coordinatorName}{dayOf.coordinatorPhone ? `: ${dayOf.coordinatorPhone}` : ''}</div>
-                  </div>
-                )}
                 <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
                   <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Photographers</div>
                   <div style={{ color: '#444' }}>{leadName} (Lead){leadPhone ? `: ${leadPhone}` : ''}</div>
@@ -200,6 +198,12 @@ export function DayOfSheet({ booking, onClose }: DayOfSheetProps) {
                     <div style={{ color: '#444' }}>{dayOf.secondShooterName} (Second){dayOf.secondShooterPhone ? `: ${dayOf.secondShooterPhone}` : ''}</div>
                   )}
                 </div>
+                {dayOf.coordinatorName && (
+                  <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
+                    <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Coordinator</div>
+                    <div style={{ color: '#444' }}>{dayOf.coordinatorName}{dayOf.coordinatorPhone ? `: ${dayOf.coordinatorPhone}` : ''}</div>
+                  </div>
+                )}
                 {dayOf.alternateContactsPartnerOne?.length > 0 && (
                   <div style={{ marginBottom: '8px', fontFamily: 'sans-serif', fontSize: '11px' }}>
                     <div style={{ fontWeight: 600, color: '#1a1a2e', marginBottom: '2px' }}>Alternate contacts for {booking.partnerOneName}</div>

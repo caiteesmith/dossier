@@ -93,6 +93,7 @@ export interface Booking {
   portalToken: string
   portalEnabled: boolean
   notes?: string
+  couplePhotoUrl?: string
   workflowStatus?: string
   addOns?: { name: string; price: string; notes: string }[]
   galleryStageIndex?: number

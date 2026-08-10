@@ -97,6 +97,7 @@ public class Booking
     [Column("add_ons", TypeName = "jsonb")] public string AddOns { get; set; } = "[]";
     [Column("created_at")]               public DateTime      CreatedAt          { get; set; }
     [Column("updated_at")]               public DateTime      UpdatedAt          { get; set; }
+    [Column("couple_photo_url")] public string? CouplePhotoUrl { get; set; }
 }
 
 // ── Task ──────────────────────────────────────────────────────────

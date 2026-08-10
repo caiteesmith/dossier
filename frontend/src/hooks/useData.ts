@@ -113,6 +113,35 @@ export function useUpdateBooking() {
   })
 }
 
+export function useUploadBookingPhoto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ bookingId, file }: { bookingId: string; file: File }) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const r = await api.post(`/api/bookings/${bookingId}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      return r.data
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['bookings', vars.bookingId] })
+      qc.invalidateQueries({ queryKey: ['bookings'] })
+    },
+  })
+}
+
+export function useDeleteBookingPhoto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (bookingId: string) => api.delete(`/api/bookings/${bookingId}/photo`),
+    onSuccess: (_d, bookingId) => {
+      qc.invalidateQueries({ queryKey: ['bookings', bookingId] })
+      qc.invalidateQueries({ queryKey: ['bookings'] })
+    },
+  })
+}
+
 // ── Tasks ─────────────────────────────────────────────────────────
 
 export function useToggleTask() {

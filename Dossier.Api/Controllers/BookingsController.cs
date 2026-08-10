@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Dossier.Api.Controllers;
 
 [ApiController, Route("api/[controller]"), Authorize]
-public class BookingsController(DossierDbContext db) : ControllerBase
+public class BookingsController(DossierDbContext db, Supabase.Client supabase) : ControllerBase
 {
     // GET api/bookings
     [HttpGet]
@@ -38,6 +38,7 @@ public class BookingsController(DossierDbContext db) : ControllerBase
             PortalToken = b.PortalToken.ToString(),
             b.PortalEnabled,
             b.Notes,
+            b.CouplePhotoUrl,
             b.CreatedAt,
             b.UpdatedAt,
         }));
@@ -100,6 +101,7 @@ public class BookingsController(DossierDbContext db) : ControllerBase
             PortalToken = booking.PortalToken.ToString(),
             booking.PortalEnabled,
             booking.Notes,
+            booking.CouplePhotoUrl,
             booking.GalleryStageIndex,
             booking.GalleryStages,
             DayOfDetails = string.IsNullOrEmpty(booking.DayOfDetails) || booking.DayOfDetails == "{}"
@@ -203,12 +205,13 @@ public class BookingsController(DossierDbContext db) : ControllerBase
         if (req.HoursCovered        is not null) booking.HoursCovered        = req.HoursCovered;
         if (req.Status              is not null) booking.Status              = req.Status.Value;
         if (req.Notes               is not null) booking.Notes               = req.Notes;
+        if (req.CouplePhotoUrl      is not null) booking.CouplePhotoUrl      = req.CouplePhotoUrl;
         if (req.GalleryStageIndex   is not null) booking.GalleryStageIndex   = req.GalleryStageIndex.Value;
         if (req.GalleryStages       is not null) booking.GalleryStages       = req.GalleryStages;
-        if (req.WorkflowStatus      is not null) booking.WorkflowStatus      = req.WorkflowStatus;
-        if (req.DayOfDetails is not null && req.DayOfDetails.Value.ValueKind != JsonValueKind.Undefined)
+        if (req.WorkflowStatus       is not null) booking.WorkflowStatus      = req.WorkflowStatus;
+        if (req.DayOfDetails        is not null && req.DayOfDetails.Value.ValueKind != JsonValueKind.Undefined)
             booking.DayOfDetails = req.DayOfDetails.Value.GetRawText();
-        if (req.AddOns is not null && req.AddOns.Value.ValueKind != JsonValueKind.Undefined)
+        if (req.AddOns              is not null && req.AddOns.Value.ValueKind != JsonValueKind.Undefined)
             booking.AddOns = req.AddOns.Value.GetRawText();
 
         booking.UpdatedAt = DateTime.UtcNow;
@@ -259,6 +262,58 @@ public class BookingsController(DossierDbContext db) : ControllerBase
         db.Tasks.AddRange(tasks);
         await db.SaveChangesAsync();
     }
+
+    // POST api/bookings/{id}/photo
+    [HttpPost("{id:guid}/photo")]
+    [RequestSizeLimit(10_000_000)] // 10MB
+    public async Task<IActionResult> UploadPhoto(Guid id, IFormFile file)
+    {
+        var pid = User.GetPhotographerId();
+        var booking = await db.Bookings
+            .FirstOrDefaultAsync(b => b.Id == id && b.PhotographerId == pid);
+        if (booking is null) return NotFound();
+
+        if (file is null || file.Length == 0)
+            return BadRequest(new { error = "No file provided." });
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType))
+            return BadRequest(new { error = "File must be JPEG, PNG, or WebP." });
+
+        var ext = Path.GetExtension(file.FileName);
+        var path = $"{id}/{Guid.NewGuid()}{ext}";
+
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+
+        await supabase.Storage
+            .From("booking-photos")
+            .Upload(ms.ToArray(), path, new Supabase.Storage.FileOptions { ContentType = file.ContentType, Upsert = true });
+
+        var publicUrl = supabase.Storage.From("booking-photos").GetPublicUrl(path);
+
+        booking.CouplePhotoUrl = publicUrl;
+        booking.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return Ok(new { url = publicUrl });
+    }
+
+    // DELETE api/bookings/{id}/photo
+    [HttpDelete("{id:guid}/photo")]
+    public async Task<IActionResult> DeletePhoto(Guid id)
+    {
+        var pid = User.GetPhotographerId();
+        var booking = await db.Bookings
+            .FirstOrDefaultAsync(b => b.Id == id && b.PhotographerId == pid);
+        if (booking is null) return NotFound();
+
+        booking.CouplePhotoUrl = null;
+        booking.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync();
+
+        return NoContent();
+    }
 }
 
 public record CreateBookingRequest(
@@ -307,6 +362,7 @@ public record UpdateBookingRequest(
     decimal?       HoursCovered        = null,
     BookingStatus? Status              = null,
     string?        Notes               = null,
+    string?        CouplePhotoUrl      = null,
     int?           GalleryStageIndex   = null,
     string?        GalleryStages       = null,
     string?        WorkflowStatus      = null,

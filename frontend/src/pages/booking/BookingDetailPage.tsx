@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import AppShell from '@/components/layout/AppShell'
 import { Badge, Card, Button } from '@/components/ui'
-import { useBookingDetail, useToggleTask, useUpdateBooking, useUpdateWorkflowStatus } from '@/hooks/useData'
-import type { Vendor } from '@/types'
+import { useBookingDetail, useToggleTask, useUpdateBooking, useUpdateWorkflowStatus, useUploadBookingPhoto, useDeleteBookingPhoto } from '@/hooks/useData'
 import { DayOfSheet } from '@/components/booking/DayOfSheet'
 import { WeatherWidget } from '@/components/ui/WeatherWidget'
+import { PhotoUpload } from '@/components/ui/PhotoUpload'
 import ShotListTab from './ShotListTab'
 import { GalleryTrackerEditor } from '@/components/booking/GalleryTracker'
 import TimelineTab from './TimelineTab'
@@ -403,6 +403,8 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
   const { data } = useBookingDetail(bookingId)
   const updateBooking = useUpdateBooking()
   const toggleTask = useToggleTask()
+  const uploadPhoto = useUploadBookingPhoto()
+  const deletePhoto = useDeleteBookingPhoto()
   const [editing, setEditing] = useState(false)
   const [addOns, setAddOns] = useState<{name:string;price:string;notes:string}[]>([])
   const [form, setForm] = useState({
@@ -474,6 +476,17 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
 
   return (
     <div className="grid grid-cols-2 gap-6">
+      <Card className="p-6">
+        <h3 className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--color-navy-400)' }}>Couple photo</h3>
+        <PhotoUpload
+          currentUrl={(data as any).couplePhotoUrl}
+          onUpload={(file: File) => uploadPhoto.mutateAsync({ bookingId, file })}
+          onRemove={() => deletePhoto.mutateAsync(bookingId)}
+          label="Couple photo"
+          aspectRatio="4/3"
+        />
+      </Card>
+
       <Card className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>Wedding details</h3>
@@ -564,13 +577,15 @@ function OverviewTab({ bookingId }: { bookingId: string }) {
             {(data as any).partnerOneLegalName && <Row label="Legal name 1" value={(data as any).partnerOneLegalName} />}
             {(data as any).partnerTwoLegalName && <Row label="Legal name 2" value={(data as any).partnerTwoLegalName} />}
             {(data as any).marriedSurname && <Row label="Married surname" value={(data as any).marriedSurname} />}
+
+            <div className="pt-3" style={{ borderTop: '1px solid var(--color-navy-100)' }}>
+              <p className="text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--color-navy-400)' }}>Weather & light</p>
+              <WeatherWidget booking={data} compact={true} />
+            </div>
           </div>
         )}
       </Card>
-      <div className="space-y-3">
-        <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>Weather & light</h3>
-        <WeatherWidget booking={data} compact={false} />
-      </div>
+
       <Card className="p-6 col-span-1">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs uppercase tracking-widest" style={{ color: 'var(--color-navy-400)' }}>Gallery editing status</h3>
